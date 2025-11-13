@@ -1,5 +1,11 @@
 const { app, BrowserWindow } = require('electron');
 
+
+app.on('ready', () => {
+  // 设置应用区域
+  app.commandLine.appendSwitch('lang', 'zh-CN');
+});
+
 function createWindow () {
   const win = new BrowserWindow({
     width: 800,

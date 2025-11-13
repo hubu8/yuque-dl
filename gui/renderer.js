@@ -1,4 +1,15 @@
 const { exec } = require('child_process');
+const fs = require('fs');
+const path = require('path');
+
+// 添加日志记录函数
+function logMessage(message) {
+  const logPath = path.join(__dirname, 'download.log');
+  const timestamp = new Date().toISOString();
+  const logEntry = `[${timestamp}] ${message}\n`;
+
+  fs.appendFileSync(logPath, logEntry);
+}
 
 function download() {
   const url = document.getElementById('url').value.trim();
@@ -7,12 +18,15 @@ function download() {
 
   // 验证输入
   if (!url) {
-    showStatus('请输入知识库URL', 'error');
+    const errorMsg = '请输入知识库URL';
+    showStatus(errorMsg, 'error');
+    logMessage(`错误: ${errorMsg}`);
     return;
   }
 
   // 构建命令
   let cmd = `yuque-dl "${url}"`;
+  logMessage(`开始下载: ${url}`);
 
   // 设置 key 的默认值
   const actualKey = key || '_yuque_session';
@@ -21,9 +35,11 @@ function download() {
     if (key) {
       // 如果用户指定了 key，则使用用户指定的 key
       cmd += ` -k="${key}" -t="${token}"`;
+      logMessage(`使用自定义key: ${key}`);
     } else {
       // 如果用户只提供了 token，使用默认 key
       cmd += ` -k="${actualKey}" -t="${token}"`;
+      logMessage(`使用默认key: ${actualKey}`);
     }
   }
 
@@ -34,6 +50,7 @@ function download() {
 
   showStatus('正在下载...', 'downloading');
   updateProgress(0);
+  logMessage('下载进程启动');
 
   // 执行命令
   exec(cmd, (error, stdout, stderr) => {
@@ -41,11 +58,22 @@ function download() {
     downloadBtn.textContent = '开始下载';
 
     if (error) {
-      showStatus(`下载失败: ${stderr || error.message}`, 'error');
+      const errorMsg = `下载失败: ${stderr || error.message}`;
+      showStatus(errorMsg, 'error');
       updateProgress(0);
+      logMessage(`下载失败: ${stderr || error.message}`);
     } else {
       showStatus('下载完成！', 'success');
       updateProgress(100);
+      logMessage('下载完成');
+    }
+
+    // 记录详细输出
+    if (stdout) {
+      logMessage(`stdout: ${stdout}`);
+    }
+    if (stderr) {
+      logMessage(`stderr: ${stderr}`);
     }
   });
 

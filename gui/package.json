@@ -23,6 +23,10 @@
     },
     "win": {
       "target": "nsis"
+    },
+    "nsis": {
+      "unicode": true,
+      "language": "2052"
     }
   }
 }
