@@ -2,6 +2,8 @@
   "name": "yuque-dl-gui",
   "version": "1.0.0",
   "main": "main.js",
+  "description": "语雀知识库下载器GUI版本",
+  "author": "hubu008",
   "scripts": {
     "start": "electron .",
     "build": "electron-builder"
