@@ -3,13 +3,24 @@ const fs = require('fs');
 const path = require('path');
 
 // 添加日志记录函数
+// 改进的 logMessage 函数
 function logMessage(message) {
-  const logPath = path.join(__dirname, 'download.log');
-  const timestamp = new Date().toISOString();
-  const logEntry = `[${timestamp}] ${message}\n`;
+  try {
+    const userDataPath = (process.env.LOCALAPPDATA || process.env.APPDATA) + '\\yuque-dl-gui';
+    // 确保目录存在
+    if (!fs.existsSync(userDataPath)) {
+      fs.mkdirSync(userDataPath, { recursive: true });
+    }
+    const logPath = path.join(userDataPath, 'download.log');
+    const timestamp = new Date().toISOString();
+    const logEntry = `[${timestamp}] ${message}\n`;
 
-  fs.appendFileSync(logPath, logEntry);
+    fs.appendFileSync(logPath, logEntry);
+  } catch (err) {
+    console.error('日志写入失败:', err);
+  }
 }
+
 
 function download() {
   const url = document.getElementById('url').value.trim();
