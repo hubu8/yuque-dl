@@ -106,11 +106,12 @@
       </div>
     </div>
 
-
-    <!-- 在适当位置添加 -->
-    <button onclick="viewLogs()" style="margin-top: 10px;">查看日志</button>
-    <button onclick="clearLogs()" style="margin-top: 10px;">清除日志</button>
-
+    <!-- 在现有按钮下方添加日志显示区域 -->
+    <div style="margin-top: 20px;">
+      <label for="logArea">运行日志:</label>
+      <textarea id="logArea" rows="10" readonly style="width: 100%; font-family: monospace; font-size: 12px;"></textarea>
+      <button onclick="clearLogArea()" style="margin-top: 5px;">清空日志</button>
+    </div>
 
   </div>
 

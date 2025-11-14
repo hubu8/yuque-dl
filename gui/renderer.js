@@ -3,56 +3,30 @@ const fs = require('fs');
 const path = require('path');
 
 
-function viewLogs() {
-  const { shell } = require('electron');
-  const fs = require('fs');
-  const path = require('path');
-
-  // 使用相同的应用数据目录
-  const userDataPath = (process.env.LOCALAPPDATA || process.env.APPDATA) + '\\yuque-dl-gui';
-  const logPath = path.join(userDataPath, 'download.log');
-
-  // 如果日志文件不存在，创建一个空文件
-  if (!fs.existsSync(logPath)) {
-    fs.writeFileSync(logPath, '');
-  }
-
-  shell.openPath(logPath);
-}
-
-function clearLogs() {
-  const fs = require('fs');
-  const path = require('path');
-
-  const userDataPath = (process.env.LOCALAPPDATA || process.env.APPDATA) + '\\yuque-dl-gui';
-  const logPath = path.join(userDataPath, 'download.log');
-
-  try {
-    fs.writeFileSync(logPath, '');
-    showStatus('日志已清除', 'success');
-  } catch (error) {
-    showStatus('清除日志失败: ' + error.message, 'error');
+// 删除原有的 clearLogs 函数，保留 clearLogArea 并修改为：
+function clearLogArea() {
+  // 清空文本域
+  const logArea = document.getElementById('logArea');
+  if (logArea) {
+    logArea.value = '';
   }
 }
-// 添加日志记录函数
+
 // 改进的 logMessage 函数
 function logMessage(message) {
-  try {
-    const userDataPath = (process.env.LOCALAPPDATA || process.env.APPDATA) + '\\yuque-dl-gui';
-    // 确保目录存在
-    if (!fs.existsSync(userDataPath)) {
-      fs.mkdirSync(userDataPath, { recursive: true });
-    }
-    const logPath = path.join(userDataPath, 'download.log');
     const timestamp = new Date().toISOString();
     const logEntry = `[${timestamp}] ${message}\n`;
 
-    fs.appendFileSync(logPath, logEntry, 'utf8');
-    console.log('Log written successfully:', message); // 调试用
-  } catch (err) {
-    console.error('日志写入失败:', err);
-  }
+    // 同时显示在文本域中
+    const logArea = document.getElementById('logArea');
+    if (logArea) {
+      logArea.value += logEntry;
+      // 自动滚动到底部
+      logArea.scrollTop = logArea.scrollHeight;
+    }
+    console.log('Log written successfully:', message);
 }
+
 
 // 修改 download 函数中的调用方式
 function download() {
