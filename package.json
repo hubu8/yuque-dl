@@ -76,7 +76,8 @@
     "pull-md-img": "^0.0.69",
     "rand-user-agent": "1.0.109",
     "semver": "^7.6.0",
-    "vitepress": "1.2.2"
+    "vitepress": "1.2.2",
+    "yuque-dl": "^1.0.81"
   },
   "engines": {
     "node": ">=18.4.0"

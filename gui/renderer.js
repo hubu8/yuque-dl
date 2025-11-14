@@ -1,7 +1,39 @@
-const { exec } = require('child_process');
+const yuqueDL = require('yuque-dl');
 const fs = require('fs');
 const path = require('path');
 
+
+function viewLogs() {
+  const { shell } = require('electron');
+  const fs = require('fs');
+  const path = require('path');
+
+  // 使用相同的应用数据目录
+  const userDataPath = (process.env.LOCALAPPDATA || process.env.APPDATA) + '\\yuque-dl-gui';
+  const logPath = path.join(userDataPath, 'download.log');
+
+  // 如果日志文件不存在，创建一个空文件
+  if (!fs.existsSync(logPath)) {
+    fs.writeFileSync(logPath, '');
+  }
+
+  shell.openPath(logPath);
+}
+
+function clearLogs() {
+  const fs = require('fs');
+  const path = require('path');
+
+  const userDataPath = (process.env.LOCALAPPDATA || process.env.APPDATA) + '\\yuque-dl-gui';
+  const logPath = path.join(userDataPath, 'download.log');
+
+  try {
+    fs.writeFileSync(logPath, '');
+    showStatus('日志已清除', 'success');
+  } catch (error) {
+    showStatus('清除日志失败: ' + error.message, 'error');
+  }
+}
 // 添加日志记录函数
 // 改进的 logMessage 函数
 function logMessage(message) {
@@ -15,13 +47,14 @@ function logMessage(message) {
     const timestamp = new Date().toISOString();
     const logEntry = `[${timestamp}] ${message}\n`;
 
-    fs.appendFileSync(logPath, logEntry);
+    fs.appendFileSync(logPath, logEntry, 'utf8');
+    console.log('Log written successfully:', message); // 调试用
   } catch (err) {
     console.error('日志写入失败:', err);
   }
 }
 
-
+// 修改 download 函数中的调用方式
 function download() {
   const url = document.getElementById('url').value.trim();
   const key = document.getElementById('key').value.trim();
@@ -35,23 +68,14 @@ function download() {
     return;
   }
 
-  // 构建命令
-  let cmd = `yuque-dl "${url}"`;
   logMessage(`开始下载: ${url}`);
 
-  // 设置 key 的默认值
-  const actualKey = key || '_yuque_session';
-
+  // 设置选项
+  const options = {};
   if (token) {
-    if (key) {
-      // 如果用户指定了 key，则使用用户指定的 key
-      cmd += ` -k="${key}" -t="${token}"`;
-      logMessage(`使用自定义key: ${key}`);
-    } else {
-      // 如果用户只提供了 token，使用默认 key
-      cmd += ` -k="${actualKey}" -t="${token}"`;
-      logMessage(`使用默认key: ${actualKey}`);
-    }
+    options.key = key || '_yuque_session';
+    options.token = token;
+    logMessage(`使用key: ${options.key}`);
   }
 
   // 更新UI状态
@@ -63,33 +87,23 @@ function download() {
   updateProgress(0);
   logMessage('下载进程启动');
 
-  // 执行命令
-  exec(cmd, (error, stdout, stderr) => {
-    downloadBtn.disabled = false;
-    downloadBtn.textContent = '开始下载';
-
-    if (error) {
-      const errorMsg = `下载失败: ${stderr || error.message}`;
-      showStatus(errorMsg, 'error');
-      updateProgress(0);
-      logMessage(`下载失败: ${stderr || error.message}`);
-    } else {
+  // 调用 yuque-dl，注意传递正确的参数
+  yuqueDL(url, options)
+    .then(() => {
+      downloadBtn.disabled = false;
+      downloadBtn.textContent = '开始下载';
       showStatus('下载完成！', 'success');
       updateProgress(100);
       logMessage('下载完成');
-    }
-
-    // 记录详细输出
-    if (stdout) {
-      logMessage(`stdout: ${stdout}`);
-    }
-    if (stderr) {
-      logMessage(`stderr: ${stderr}`);
-    }
-  });
-
-  // 模拟进度更新
-  simulateProgress();
+    })
+    .catch((error) => {
+      downloadBtn.disabled = false;
+      downloadBtn.textContent = '开始下载';
+      const errorMsg = `下载失败: ${error.message}`;
+      showStatus(errorMsg, 'error');
+      updateProgress(0);
+      logMessage(`下载失败: ${error.message}`);
+    });
 }
 
 function showStatus(message, type) {
