@@ -218,7 +218,10 @@
       <div class="tab-content" id="server-content" style="display: none;">
         <div class="form-group">
           <label for="serverPath">服务器路径</label>
-          <input type="text" id="serverPath" placeholder="例如: ./download">
+          <div class="input-with-button">
+            <input type="text" id="serverPath" placeholder="选择已下载的知识库目录" readonly>
+            <button type="button" id="selectServerPathBtn">选择目录</button>
+          </div>
         </div>
         
         <div class="form-group">
@@ -245,12 +248,21 @@
     <div class="result" id="result" style="display: none;"></div>
     
     <div class="footer">
-      <div class="license">© 2024 语雀知识库下载工具 | QQ: 2650523664 </div>
+      <div class="license" id="licenseInfo">© 2024 语雀知识库下载工具 | QQ: 2650523664 </div>
     </div>
   </div>
   
   <script>
-    const { ipcRenderer, dialog } = require('electron');
+    const { ipcRenderer, shell } = require('electron');
+    
+    // 页面加载时获取授权信息
+    window.addEventListener('DOMContentLoaded', async () => {
+      const licenseInfo = await ipcRenderer.invoke('getLicenseInfo');
+      if (licenseInfo.licensed) {
+        document.getElementById('licenseInfo').textContent = 
+          `© 2024 语雀知识库下载工具 | ${licenseInfo.message} | QQ: 2650523664`;
+      }
+    });
     
     // 切换标签
     document.querySelectorAll('.tab').forEach(tab => {
@@ -270,20 +282,24 @@
     
     // 选择目录按钮点击事件
     document.getElementById('selectDirBtn').addEventListener('click', async () => {
-      const result = await dialog.showOpenDialog({
-        properties: ['openDirectory'],
-        title: '选择下载目录'
-      });
-      if (!result.canceled && result.filePaths && result.filePaths.length > 0) {
-        document.getElementById('distDir').value = result.filePaths[0];
+      const result = await ipcRenderer.invoke('selectDirectory', '选择下载目录');
+      if (result.success) {
+        document.getElementById('distDir').value = result.filePath;
       }
     });
     
     // 打开下载目录按钮点击事件
     document.getElementById('openDirBtn').addEventListener('click', async () => {
       const distDir = document.getElementById('distDir').value || 'download';
-      const { shell } = require('electron');
       shell.openPath(distDir);
+    });
+    
+    // 服务器路径选择按钮点击事件
+    document.getElementById('selectServerPathBtn').addEventListener('click', async () => {
+      const result = await ipcRenderer.invoke('selectDirectory', '选择服务器路径（已下载的知识库目录）');
+      if (result.success) {
+        document.getElementById('serverPath').value = result.filePath;
+      }
     });
     
     // 下载按钮点击事件

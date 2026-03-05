@@ -22,7 +22,8 @@
     "test:ui": "vitest --ui --coverage.enabled=true",
     "test:coverage": "vitest run --coverage",
     "electron:dev": "electron .",
-    "electron:build": "electron-builder"
+    "electron:build": "electron-builder",
+    "license:gen": "node license-generator.js"
   },
   "repository": {
     "type": "git",

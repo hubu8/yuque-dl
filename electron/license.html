@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>软件授权 - 语雀知识库下载工具</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f5f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      background-color: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 500px;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 25px;
+      font-size: 20px;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+      color: #555;
+      font-size: 14px;
+    }
+    .machine-id {
+      background-color: #f8f9fa;
+      padding: 12px;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      word-break: break-all;
+      color: #495057;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 25px;
+    }
+    button {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+    }
+    .btn-primary {
+      background-color: #007bff;
+      color: white;
+    }
+    .btn-primary:hover {
+      background-color: #0056b3;
+    }
+    .btn-secondary {
+      background-color: #6c757d;
+      color: white;
+    }
+    .btn-secondary:hover {
+      background-color: #545b62;
+    }
+    .result {
+      margin-top: 15px;
+      padding: 12px;
+      border-radius: 4px;
+      font-size: 14px;
+      display: none;
+    }
+    .success {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .info {
+      background-color: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+    }
+    .help-text {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #f8f9fa;
+      border-radius: 4px;
+      font-size: 13px;
+      color: #6c757d;
+      line-height: 1.5;
+    }
+    .help-text h3 {
+      margin-top: 0;
+      color: #495057;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔐 软件授权激活</h1>
+    
+    <div class="form-group">
+      <label>机器码（请将此码提供给管理员获取授权）</label>
+      <div class="machine-id" id="machineId">加载中...</div>
+    </div>
+    
+    <div class="form-group">
+      <label for="licenseCode">授权码</label>
+      <input type="text" id="licenseCode" placeholder="请输入授权码，格式：XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX">
+    </div>
+    
+    <div class="button-group">
+      <button class="btn-secondary" id="copyBtn">复制机器码</button>
+      <button class="btn-primary" id="activateBtn">激活软件</button>
+    </div>
+    
+    <div class="result" id="result"></div>
+    
+    <div class="help-text">
+      <h3>📋 授权说明</h3>
+      <ol>
+        <li>复制上方的<strong>机器码</strong>，发送给软件管理员</li>
+        <li>管理员会根据机器码生成<strong>授权码</strong></li>
+        <li>将收到的授权码输入上方输入框，点击"激活软件"</li>
+        <li>激活成功后即可使用全部功能</li>
+      </ol>
+      <p><strong>注意：</strong>授权码与设备绑定，更换设备需要重新授权。</p>
+    </div>
+  </div>
+  
+  <script>
+    const { ipcRenderer, clipboard } = require('electron');
+    
+    // 页面加载时获取机器码
+    window.addEventListener('DOMContentLoaded', async () => {
+      const machineId = await ipcRenderer.invoke('getMachineId');
+      document.getElementById('machineId').textContent = machineId;
+    });
+    
+    // 复制机器码
+    document.getElementById('copyBtn').addEventListener('click', () => {
+      const machineId = document.getElementById('machineId').textContent;
+      clipboard.writeText(machineId);
+      showResult('机器码已复制到剪贴板', 'info');
+    });
+    
+    // 激活软件
+    document.getElementById('activateBtn').addEventListener('click', async () => {
+      const licenseCode = document.getElementById('licenseCode').value.trim();
+      
+      if (!licenseCode) {
+        showResult('请输入授权码', 'error');
+        return;
+      }
+      
+      const result = await ipcRenderer.invoke('verifyLicense', licenseCode);
+      
+      if (result.valid) {
+        showResult(`✅ ${result.message}，正在进入主程序...`, 'success');
+        setTimeout(async () => {
+          await ipcRenderer.invoke('openMainWindow');
+        }, 1500);
+      } else {
+        showResult(`❌ ${result.message}`, 'error');
+      }
+    });
+    
+    function showResult(message, type) {
+      const resultElement = document.getElementById('result');
+      resultElement.textContent = message;
+      resultElement.className = `result ${type}`;
+      resultElement.style.display = 'block';
+    }
+  </script>
+</body>
+</html>
