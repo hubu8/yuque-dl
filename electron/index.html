@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>语雀知识库下载工具</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    .tab-container {
+      margin: 20px 0;
+    }
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid #ddd;
+    }
+    .tab {
+      padding: 10px 20px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+    }
+    .tab.active {
+      border-bottom: 2px solid #007bff;
+      color: #007bff;
+    }
+    .tab-content {
+      padding: 20px 0;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    input[type="text"], input[type="number"], select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    input[type="checkbox"] {
+      margin-right: 5px;
+    }
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background-color: #0069d9;
+    }
+    .result {
+      margin-top: 20px;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    .success {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .progress {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>语雀知识库下载工具</h1>
+    
+    <div class="tab-container">
+      <div class="tabs">
+        <div class="tab active" data-tab="download">下载知识库</div>
+        <div class="tab" data-tab="server">启动服务器</div>
+      </div>
+      
+      <div class="tab-content" id="download-content">
+        <div class="form-group">
+          <label for="url">语雀知识库URL</label>
+          <input type="text" id="url" placeholder="例如: https://www.yuque.com/your-repo/your-book">
+        </div>
+        
+        <div class="form-group">
+          <label for="distDir">下载目录</label>
+          <input type="text" id="distDir" value="download">
+        </div>
+        
+        <div class="form-group">
+          <div class="checkbox-group">
+            <input type="checkbox" id="ignoreImg">
+            <label for="ignoreImg">忽略图片不下载</label>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <div class="checkbox-group">
+            <input type="checkbox" id="ignoreAttachments">
+            <label for="ignoreAttachments">忽略附件</label>
+          </div>
+          <input type="text" id="ignoreAttachmentsExt" placeholder="可选：忽略的附件文件后缀，多种后缀逗号分割，例如：mp4,pdf">
+        </div>
+        
+        <div class="form-group">
+          <label for="key">语雀的cookie key</label>
+          <input type="text" id="key" placeholder="默认是 _yuque_session">
+        </div>
+        
+        <div class="form-group">
+          <label for="token">语雀的cookie value</label>
+          <input type="text" id="token" placeholder="cookie key 对应的值">
+        </div>
+        
+        <div class="form-group">
+          <div class="checkbox-group">
+            <input type="checkbox" id="toc">
+            <label for="toc">输出文档toc目录</label>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <div class="checkbox-group">
+            <input type="checkbox" id="incremental">
+            <label for="incremental">开启增量下载</label>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <div class="checkbox-group">
+            <input type="checkbox" id="convertMarkdownVideoLinks">
+            <label for="convertMarkdownVideoLinks">转化markdown视频链接为video标签</label>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <div class="checkbox-group">
+            <input type="checkbox" id="hideFooter">
+            <label for="hideFooter">禁用页脚显示</label>
+          </div>
+        </div>
+        
+        <button id="download-btn">开始下载</button>
+      </div>
+      
+      <div class="tab-content" id="server-content" style="display: none;">
+        <div class="form-group">
+          <label for="serverPath">服务器路径</label>
+          <input type="text" id="serverPath" placeholder="例如: ./download">
+        </div>
+        
+        <div class="form-group">
+          <label for="port">端口</label>
+          <input type="number" id="port" value="5173">
+        </div>
+        
+        <div class="form-group">
+          <label for="host">主机</label>
+          <input type="text" id="host" value="localhost">
+        </div>
+        
+        <div class="form-group">
+          <div class="checkbox-group">
+            <input type="checkbox" id="force">
+            <label for="force">强制重新生成.vitepress</label>
+          </div>
+        </div>
+        
+        <button id="server-btn">启动服务器</button>
+      </div>
+    </div>
+    
+    <div class="result" id="result" style="display: none;"></div>
+  </div>
+  
+  <script>
+    // 切换标签
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        // 移除所有标签的active类
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        // 添加当前标签的active类
+        tab.classList.add('active');
+        
+        // 隐藏所有内容
+        document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
+        // 显示当前标签对应的内容
+        const tabId = tab.getAttribute('data-tab');
+        document.getElementById(`${tabId}-content`).style.display = 'block';
+      });
+    });
+    
+    // 下载按钮点击事件
+    document.getElementById('download-btn').addEventListener('click', async () => {
+      const url = document.getElementById('url').value;
+      if (!url) {
+        showResult('请输入语雀知识库URL', 'error');
+        return;
+      }
+      
+      const options = {
+        distDir: document.getElementById('distDir').value || 'download',
+        ignoreImg: document.getElementById('ignoreImg').checked,
+        ignoreAttachments: document.getElementById('ignoreAttachments').checked ? 
+          (document.getElementById('ignoreAttachmentsExt').value || true) : false,
+        key: document.getElementById('key').value || undefined,
+        token: document.getElementById('token').value || undefined,
+        toc: document.getElementById('toc').checked,
+        incremental: document.getElementById('incremental').checked,
+        convertMarkdownVideoLinks: document.getElementById('convertMarkdownVideoLinks').checked,
+        hideFooter: document.getElementById('hideFooter').checked
+      };
+      
+      showResult('正在下载...', 'success');
+      
+      try {
+        const result = await window.electronAPI.download(url, options);
+        if (result.success) {
+          showResult('下载成功！', 'success');
+        } else {
+          showResult(`下载失败: ${result.error}`, 'error');
+        }
+      } catch (error) {
+        showResult(`下载失败: ${error.message}`, 'error');
+      }
+    });
+    
+    // 服务器按钮点击事件
+    document.getElementById('server-btn').addEventListener('click', async () => {
+      const serverPath = document.getElementById('serverPath').value;
+      if (!serverPath) {
+        showResult('请输入服务器路径', 'error');
+        return;
+      }
+      
+      const options = {
+        port: parseInt(document.getElementById('port').value) || 5173,
+        host: document.getElementById('host').value || 'localhost',
+        force: document.getElementById('force').checked
+      };
+      
+      showResult('正在启动服务器...', 'success');
+      
+      try {
+        const result = await window.electronAPI.server(serverPath, options);
+        if (result.success) {
+          showResult('服务器启动成功！', 'success');
+        } else {
+          showResult(`服务器启动失败: ${result.error}`, 'error');
+        }
+      } catch (error) {
+        showResult(`服务器启动失败: ${error.message}`, 'error');
+      }
+    });
+    
+    // 显示结果
+    function showResult(message, type) {
+      const resultElement = document.getElementById('result');
+      resultElement.textContent = message;
+      resultElement.className = `result ${type}`;
+      resultElement.style.display = 'block';
+    }
+  </script>
+</body>
+</html>

@@ -20,7 +20,9 @@
     "release": "run-s clean build np changelog:gen changelog:commit",
     "test": "vitest --run",
     "test:ui": "vitest --ui --coverage.enabled=true",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "electron:dev": "electron .",
+    "electron:build": "electron-builder"
   },
   "repository": {
     "type": "git",
@@ -52,6 +54,8 @@
     "@vitest/coverage-v8": "^1.6.0",
     "@vitest/ui": "^1.6.0",
     "conventional-changelog-cli": "^5.0.0",
+    "electron": "^40.7.0",
+    "electron-builder": "^26.8.1",
     "eslint": "^8.57.1",
     "msw": "^2.3.0",
     "np": "^10.0.7",
@@ -80,5 +84,29 @@
   },
   "engines": {
     "node": ">=18.4.0"
+  },
+  "main": "electron/main.js",
+  "build": {
+    "appId": "com.yuque-dl.app",
+    "productName": "语雀知识库下载工具",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": true,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "docs/assets/logo.png",
+      "uninstallerIcon": "docs/assets/logo.png",
+      "installerHeaderIcon": "docs/assets/logo.png"
+    }
   }
 }
