@@ -202,6 +202,8 @@
   </div>
   
   <script>
+    const { ipcRenderer } = require('electron');
+    
     // 切换标签
     document.querySelectorAll('.tab').forEach(tab => {
       tab.addEventListener('click', () => {
@@ -242,7 +244,7 @@
       showResult('正在下载...', 'success');
       
       try {
-        const result = await window.electronAPI.download(url, options);
+        const result = await ipcRenderer.invoke('download', url, options);
         if (result.success) {
           showResult('下载成功！', 'success');
         } else {
@@ -270,7 +272,7 @@
       showResult('正在启动服务器...', 'success');
       
       try {
-        const result = await window.electronAPI.server(serverPath, options);
+        const result = await ipcRenderer.invoke('server', serverPath, options);
         if (result.success) {
           showResult('服务器启动成功！', 'success');
         } else {
