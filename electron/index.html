@@ -255,13 +255,17 @@
   <script>
     const { ipcRenderer, shell } = require('electron');
     
-    // 页面加载时获取授权信息
+    // 页面加载时获取授权信息和默认下载目录
     window.addEventListener('DOMContentLoaded', async () => {
       const licenseInfo = await ipcRenderer.invoke('getLicenseInfo');
       if (licenseInfo.licensed) {
         document.getElementById('licenseInfo').textContent = 
           `© 2024 语雀知识库下载工具 | ${licenseInfo.message} | QQ: 2650523664`;
       }
+      
+      // 获取默认下载目录
+      const defaultDir = await ipcRenderer.invoke('getDefaultDownloadDir');
+      document.getElementById('distDir').value = defaultDir;
     });
     
     // 切换标签
@@ -282,21 +286,24 @@
     
     // 选择目录按钮点击事件
     document.getElementById('selectDirBtn').addEventListener('click', async () => {
-      const result = await ipcRenderer.invoke('selectDirectory', '选择下载目录');
+      const currentDir = document.getElementById('distDir').value;
+      const result = await ipcRenderer.invoke('selectDirectory', '选择下载目录', currentDir);
       if (result.success) {
         document.getElementById('distDir').value = result.filePath;
       }
     });
     
     // 打开下载目录按钮点击事件
-    document.getElementById('openDirBtn').addEventListener('click', async () => {
-      const distDir = document.getElementById('distDir').value || 'download';
+    document.getElementById('openDirBtn').addEventListener('click', () => {
+      const distDir = document.getElementById('distDir').value;
       shell.openPath(distDir);
     });
     
     // 服务器路径选择按钮点击事件
     document.getElementById('selectServerPathBtn').addEventListener('click', async () => {
-      const result = await ipcRenderer.invoke('selectDirectory', '选择服务器路径（已下载的知识库目录）');
+      const currentDir = document.getElementById('serverPath').value;
+      const defaultDir = currentDir || await ipcRenderer.invoke('getDefaultDownloadDir');
+      const result = await ipcRenderer.invoke('selectDirectory', '选择服务器路径（已下载的知识库目录）', defaultDir);
       if (result.success) {
         document.getElementById('serverPath').value = result.filePath;
       }
@@ -310,8 +317,14 @@
         return;
       }
       
+      let distDir = document.getElementById('distDir').value;
+      // 如果没有设置目录或使用的是旧版默认值，使用系统默认下载目录
+      if (!distDir || distDir === 'download') {
+        distDir = await ipcRenderer.invoke('getDefaultDownloadDir');
+      }
+      
       const options = {
-        distDir: document.getElementById('distDir').value || 'download',
+        distDir: distDir,
         ignoreImg: document.getElementById('ignoreImg').checked,
         ignoreAttachments: document.getElementById('ignoreAttachments').checked ? 
           (document.getElementById('ignoreAttachmentsExt').value || true) : false,

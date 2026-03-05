@@ -1,9 +1,32 @@
 import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
+import { createRequire } from 'module';
 import { getMachineId, verifyLicenseCode, saveLicenseCode, isLicensed, getLicenseInfo } from './license.js';
 
+const require = createRequire(import.meta.url);
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// 获取默认下载目录（安装目录下的download文件夹）
+function getDefaultDownloadDir() {
+  return path.join(process.resourcesPath, '..', 'download');
+}
+
+// 确保下载目录存在
+function ensureDownloadDir() {
+  const downloadDir = getDefaultDownloadDir();
+  if (!fs.existsSync(downloadDir)) {
+    try {
+      fs.mkdirSync(downloadDir, { recursive: true });
+      console.log('创建下载目录:', downloadDir);
+    } catch (error) {
+      console.error('创建下载目录失败:', error);
+    }
+  }
+  return downloadDir;
+}
 
 function createMainWindow() {
   const mainWindow = new BrowserWindow({
@@ -34,6 +57,9 @@ function createLicenseWindow() {
 }
 
 app.whenReady().then(() => {
+  // 确保下载目录存在
+  ensureDownloadDir();
+  
   // 检查是否已授权
   if (isLicensed()) {
     createMainWindow();
@@ -85,10 +111,20 @@ ipcMain.handle('openMainWindow', () => {
   }
 });
 
+// 获取dist目录路径（打包后在asar外部）
+function getDistPath() {
+  // 在开发环境，__dirname指向electron目录
+  // 在生产环境（打包后），resourcesPath指向app.asar所在目录
+  if (app.isPackaged) {
+    return path.join(process.resourcesPath, 'app', 'dist', 'es');
+  }
+  return path.join(__dirname, '../dist/es');
+}
+
 // 处理下载请求
 ipcMain.handle('download', async (event, url, options) => {
   try {
-    const { main } = await import(path.join(__dirname, '../dist/es/index.js'));
+    const { main } = require(path.join(getDistPath(), 'index.js'));
     await main(url, options);
     return { success: true };
   } catch (error) {
@@ -99,7 +135,7 @@ ipcMain.handle('download', async (event, url, options) => {
 // 处理服务器启动请求
 ipcMain.handle('server', async (event, serverPath, options) => {
   try {
-    const { runServer } = await import(path.join(__dirname, '../dist/es/server.js'));
+    const { runServer } = require(path.join(getDistPath(), 'server.js'));
     await runServer(serverPath, options);
     return { success: true };
   } catch (error) {
@@ -108,14 +144,20 @@ ipcMain.handle('server', async (event, serverPath, options) => {
 });
 
 // 处理目录选择请求
-ipcMain.handle('selectDirectory', async (event, title = '选择目录') => {
+ipcMain.handle('selectDirectory', async (event, title = '选择目录', defaultPath = null) => {
   const result = await dialog.showOpenDialog({
     properties: ['openDirectory'],
-    title: title
+    title: title,
+    defaultPath: defaultPath || getDefaultDownloadDir()
   });
   
   if (!result.canceled && result.filePaths && result.filePaths.length > 0) {
     return { success: true, filePath: result.filePaths[0] };
   }
   return { success: false };
+});
+
+// 获取默认下载目录
+ipcMain.handle('getDefaultDownloadDir', () => {
+  return getDefaultDownloadDir();
 });

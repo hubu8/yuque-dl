@@ -93,6 +93,16 @@
     "directories": {
       "output": "dist-electron"
     },
+    "files": [
+      "electron/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "dist",
+        "to": "app/dist"
+      }
+    ],
     "win": {
       "target": [
         {
