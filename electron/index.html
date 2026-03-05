@@ -6,78 +6,112 @@
   <title>语雀知识库下载工具</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      background-color: #f5f5f5;
-    }
-    .container {
-      max-width: 800px;
-      margin: 0 auto;
-      background-color: white;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    h1 {
-      text-align: center;
-      color: #333;
-    }
-    .tab-container {
-      margin: 20px 0;
-    }
-    .tabs {
-      display: flex;
-      border-bottom: 1px solid #ddd;
-    }
-    .tab {
-      padding: 10px 20px;
-      cursor: pointer;
-      border-bottom: 2px solid transparent;
-    }
+    font-family: Arial, sans-serif;
+    margin: 10px;
+    background-color: #f5f5f5;
+  }
+  .container {
+    max-width: 800px;
+    margin: 0 auto;
+    background-color: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  h1 {
+    text-align: center;
+    color: #333;
+    font-size: 20px;
+    margin: 0 0 15px 0;
+  }
+  .tab-container {
+    margin: 10px 0;
+  }
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid #ddd;
+  }
+  .tab {
+    padding: 8px 15px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    font-size: 14px;
+  }
     .tab.active {
       border-bottom: 2px solid #007bff;
       color: #007bff;
     }
     .tab-content {
-      padding: 20px 0;
-    }
-    .form-group {
-      margin-bottom: 15px;
-    }
-    label {
-      display: block;
-      margin-bottom: 5px;
-      font-weight: bold;
-    }
-    input[type="text"], input[type="number"], select {
-      width: 100%;
-      padding: 8px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-    }
-    input[type="checkbox"] {
-      margin-right: 5px;
-    }
-    .checkbox-group {
-      display: flex;
-      align-items: center;
-    }
+    padding: 15px 0;
+  }
+  .form-group {
+    margin-bottom: 10px;
+  }
+  label {
+    display: block;
+    margin-bottom: 4px;
+    font-weight: bold;
+    font-size: 13px;
+  }
+  input[type="text"], input[type="number"], select {
+    width: 100%;
+    padding: 6px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+  input[type="checkbox"] {
+    margin-right: 5px;
+  }
+  .checkbox-group {
+    display: flex;
+    align-items: center;
+    font-size: 13px;
+  }
+  .checkbox-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 15px;
+  }
+  .checkbox-grid .checkbox-group {
+    margin: 0;
+  }
     button {
       background-color: #007bff;
       color: white;
       border: none;
-      padding: 10px 20px;
+      padding: 8px 16px;
       border-radius: 4px;
       cursor: pointer;
-      font-size: 16px;
+      font-size: 14px;
     }
     button:hover {
       background-color: #0069d9;
     }
+    .input-with-button {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .input-with-button input {
+      flex: 1;
+    }
+    .input-with-button button {
+      white-space: nowrap;
+      min-width: 70px;
+      padding: 6px 12px;
+    }
+    .button-center {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-top: 15px;
+    }
     .result {
-      margin-top: 20px;
-      padding: 10px;
+      margin-top: 15px;
+      padding: 8px;
       border-radius: 4px;
+      font-size: 13px;
     }
     .success {
       background-color: #d4edda;
@@ -88,6 +122,16 @@
       background-color: #f8d7da;
       color: #721c24;
       border: 1px solid #f5c6cb;
+    }
+    .footer {
+      margin-top: 15px;
+      padding-top: 10px;
+      border-top: 1px solid #eee;
+      text-align: center;
+    }
+    .license {
+      font-size: 12px;
+      color: #666;
     }
     .progress {
       margin-top: 10px;
@@ -112,7 +156,10 @@
         
         <div class="form-group">
           <label for="distDir">下载目录</label>
-          <input type="text" id="distDir" value="download">
+          <div class="input-with-button">
+            <input type="text" id="distDir" value="download" readonly>
+            <button type="button" id="selectDirBtn">选择目录</button>
+          </div>
         </div>
         
         <div class="form-group">
@@ -140,35 +187,32 @@
           <input type="text" id="token" placeholder="cookie key 对应的值">
         </div>
         
-        <div class="form-group">
+        <div class="checkbox-grid">
           <div class="checkbox-group">
             <input type="checkbox" id="toc">
             <label for="toc">输出文档toc目录</label>
           </div>
-        </div>
-        
-        <div class="form-group">
+          
           <div class="checkbox-group">
             <input type="checkbox" id="incremental">
             <label for="incremental">开启增量下载</label>
           </div>
-        </div>
-        
-        <div class="form-group">
+          
           <div class="checkbox-group">
             <input type="checkbox" id="convertMarkdownVideoLinks">
             <label for="convertMarkdownVideoLinks">转化markdown视频链接为video标签</label>
           </div>
-        </div>
-        
-        <div class="form-group">
+          
           <div class="checkbox-group">
             <input type="checkbox" id="hideFooter">
             <label for="hideFooter">禁用页脚显示</label>
           </div>
         </div>
         
-        <button id="download-btn">开始下载</button>
+        <div class="button-center">
+          <button id="download-btn">开始下载</button>
+          <button type="button" id="openDirBtn">打开下载目录</button>
+        </div>
       </div>
       
       <div class="tab-content" id="server-content" style="display: none;">
@@ -199,10 +243,14 @@
     </div>
     
     <div class="result" id="result" style="display: none;"></div>
+    
+    <div class="footer">
+      <div class="license">© 2024 语雀知识库下载工具 | QQ: 2650523664 </div>
+    </div>
   </div>
   
   <script>
-    const { ipcRenderer } = require('electron');
+    const { ipcRenderer, dialog } = require('electron');
     
     // 切换标签
     document.querySelectorAll('.tab').forEach(tab => {
@@ -220,6 +268,24 @@
       });
     });
     
+    // 选择目录按钮点击事件
+    document.getElementById('selectDirBtn').addEventListener('click', async () => {
+      const result = await dialog.showOpenDialog({
+        properties: ['openDirectory'],
+        title: '选择下载目录'
+      });
+      if (!result.canceled && result.filePaths && result.filePaths.length > 0) {
+        document.getElementById('distDir').value = result.filePaths[0];
+      }
+    });
+    
+    // 打开下载目录按钮点击事件
+    document.getElementById('openDirBtn').addEventListener('click', async () => {
+      const distDir = document.getElementById('distDir').value || 'download';
+      const { shell } = require('electron');
+      shell.openPath(distDir);
+    });
+    
     // 下载按钮点击事件
     document.getElementById('download-btn').addEventListener('click', async () => {
       const url = document.getElementById('url').value;
@@ -233,7 +299,7 @@
         ignoreImg: document.getElementById('ignoreImg').checked,
         ignoreAttachments: document.getElementById('ignoreAttachments').checked ? 
           (document.getElementById('ignoreAttachmentsExt').value || true) : false,
-        key: document.getElementById('key').value || undefined,
+        key: document.getElementById('key').value || '_yuque_session',
         token: document.getElementById('token').value || undefined,
         toc: document.getElementById('toc').checked,
         incremental: document.getElementById('incremental').checked,

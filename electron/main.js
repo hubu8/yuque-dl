@@ -31,8 +31,8 @@ app.on('window-all-closed', () => {
 
 // 处理下载请求
 ipcMain.handle('download', async (event, url, options) => {
-  const { main } = await import('../dist/es/index.js');
   try {
+    const { main } = await import(path.join(__dirname, '../dist/es/index.js'));
     await main(url, options);
     return { success: true };
   } catch (error) {
@@ -42,8 +42,8 @@ ipcMain.handle('download', async (event, url, options) => {
 
 // 处理服务器启动请求
 ipcMain.handle('server', async (event, serverPath, options) => {
-  const { runServer } = await import('../dist/es/server.js');
   try {
+    const { runServer } = await import(path.join(__dirname, '../dist/es/server.js'));
     await runServer(serverPath, options);
     return { success: true };
   } catch (error) {
