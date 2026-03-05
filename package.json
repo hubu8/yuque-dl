@@ -101,6 +101,10 @@
       {
         "from": "dist",
         "to": "app/dist"
+      },
+      {
+        "from": "server-lib",
+        "to": "app/server-lib"
       }
     ],
     "win": {

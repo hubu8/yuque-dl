@@ -7,6 +7,8 @@ import { getMachineId, verifyLicenseCode, saveLicenseCode, isLicensed, getLicens
 
 const require = createRequire(import.meta.url);
 
+let vitepressServer = null;
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // 获取默认下载目录（安装目录下的download文件夹）
@@ -43,8 +45,8 @@ function createMainWindow() {
 
 function createLicenseWindow() {
   const licenseWindow = new BrowserWindow({
-    width: 600,
-    height: 400,
+    width: 1000,
+    height: 800,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false
@@ -137,6 +139,17 @@ ipcMain.handle('server', async (event, serverPath, options) => {
   try {
     const { runServer } = require(path.join(getDistPath(), 'server.js'));
     await runServer(serverPath, options);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// 处理停止服务器请求
+ipcMain.handle('stopServer', async () => {
+  try {
+    const { stopServer } = require(path.join(getDistPath(), 'server.js'));
+    await stopServer();
     return { success: true };
   } catch (error) {
     return { success: false, error: error.message };

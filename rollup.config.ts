@@ -5,7 +5,8 @@ import terser from '@rollup/plugin-terser'
 export default defineConfig({
   input: {
     index: 'src/index.ts',
-    cli: 'src/cli.ts'
+    cli: 'src/cli.ts',
+    server: 'src/server.ts'
   },
   output:[
     {

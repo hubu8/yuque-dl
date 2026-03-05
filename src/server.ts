@@ -2,11 +2,12 @@ import { mkdir, writeFile, readFile, readdir, stat, access, copyFile } from 'nod
 import { dirname, join, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createServer } from 'vitepress'
-
-import type { IServerCliOptions, ISidebarItem } from './types'
 import { existsSync } from 'node:fs'
 
+import type { IServerCliOptions, ISidebarItem } from './types'
+
 let restartPromise: Promise<void> | undefined
+let currentServer: any = null
 
 export async function runServer(root: string, options: IServerCliOptions) {
   const rootPath = resolve(root)
@@ -32,6 +33,7 @@ export async function runServer(root: string, options: IServerCliOptions) {
 
       return restartPromise
     })
+    currentServer = server
     await server.listen()
     server.printUrls()
     // bindShortcuts(server, createDevServer)
@@ -48,8 +50,18 @@ async function createVitePressConfig(root: string) {
   const vitepressPath = join(root, '/.vitepress')
   await mkdir(vitepressPath, {recursive: true})
   const __dirname = dirname(fileURLToPath(import.meta.url))
-  // 相对于 package_dir + dist/es/xxxx.js
-  const serverLibPath = join(__dirname, '../../server-lib/bundle.js')
+  
+  // 获取server-lib路径
+  let serverLibPath: string
+  if (__dirname.includes('app.asar')) {
+    // 打包后：server-lib在resources/app/server-lib
+    const resourcesPath = (process as any).resourcesPath || join(__dirname, '../../..')
+    serverLibPath = join(resourcesPath, 'app', 'server-lib', 'bundle.js')
+  } else {
+    // 开发环境：server-lib在项目根目录
+    serverLibPath = join(__dirname, '../../server-lib/bundle.js')
+  }
+  
   const vitePressServerLib = join(vitepressPath, 'bundle.mjs')
   await copyFile(serverLibPath, vitePressServerLib)
   const vitePressConfig = join(vitepressPath, 'config.mjs')
@@ -233,4 +245,18 @@ async function createSideBarItems (
     }
   }
   return result
+}
+
+export async function stopServer() {
+  if (currentServer) {
+    try {
+      await currentServer.close()
+      currentServer = null
+      return true
+    } catch (error) {
+      console.error('停止服务器失败:', error)
+      throw error
+    }
+  }
+  return false
 }
