@@ -101,12 +101,9 @@
       ]
     },
     "nsis": {
-      "oneClick": true,
+      "oneClick": false,
       "perMachine": true,
-      "allowToChangeInstallationDirectory": true,
-      "installerIcon": "docs/assets/logo.png",
-      "uninstallerIcon": "docs/assets/logo.png",
-      "installerHeaderIcon": "docs/assets/logo.png"
+      "allowToChangeInstallationDirectory": true
     }
   }
 }

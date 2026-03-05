@@ -1,5 +1,8 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
-const path = require('path');
+import { app, BrowserWindow, ipcMain } from 'electron';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function createWindow() {
   const mainWindow = new BrowserWindow({
@@ -29,7 +32,7 @@ app.on('window-all-closed', () => {
 
 // 处理下载请求
 ipcMain.handle('download', async (event, url, options) => {
-  const { main } = require('../dist/es/index');
+  const { main } = await import('../dist/es/index.js');
   try {
     await main(url, options);
     return { success: true };
@@ -40,7 +43,7 @@ ipcMain.handle('download', async (event, url, options) => {
 
 // 处理服务器启动请求
 ipcMain.handle('server', async (event, serverPath, options) => {
-  const { runServer } = require('../dist/es/server');
+  const { runServer } = await import('../dist/es/server.js');
   try {
     await runServer(serverPath, options);
     return { success: true };
