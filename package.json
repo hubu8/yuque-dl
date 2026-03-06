@@ -94,7 +94,9 @@
     },
     "files": [
       "electron/**/*",
-      "package.json"
+      "package.json",
+      "dist/es/**/*",
+      "server-lib/**/*"
     ],
     "extraResources": [
       {
@@ -104,8 +106,13 @@
       {
         "from": "server-lib",
         "to": "app/server-lib"
+      },
+      {
+        "from": "node_modules",
+        "to": "app/node_modules"
       }
     ],
+    "npmRebuild": false,
     "win": {
       "target": [
         {

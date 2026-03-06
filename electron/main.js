@@ -123,6 +123,16 @@ function getDistPath() {
   return path.join(__dirname, '../dist/es');
 }
 
+// 确保模块路径正确
+if (app.isPackaged) {
+  // 在生产环境，将app/node_modules添加到模块搜索路径
+  const nodeModulesPath = path.join(process.resourcesPath, 'app', 'node_modules');
+  if (fs.existsSync(nodeModulesPath)) {
+    process.env.NODE_PATH = nodeModulesPath;
+    require('module').Module._initPaths();
+  }
+}
+
 // 处理下载请求
 ipcMain.handle('download', async (event, url, options) => {
   try {

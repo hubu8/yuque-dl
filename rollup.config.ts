@@ -18,17 +18,7 @@ export default defineConfig({
     typescript(),
     terser()
   ],
-  // 移除所有外部依赖配置，将所有依赖打包到输出文件中
-  // external: [
-  //   'node:fs/promises',
-  //   'node:path',
-  //   'node:fs',
-  //   'node:url',
-  //   'node:process',
-  //   'node:crypto',
-  //   'node:stream',
-  //   'node:util'
-  // ]
+  // 不设置 external，将所有依赖都打包到输出文件中
 })
 
 
