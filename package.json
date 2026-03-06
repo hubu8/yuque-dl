@@ -66,7 +66,6 @@
     "typescript": "^5.4.5",
     "vitest": "^1.6.0"
   },
-  "main": "dist/es/index.js",
   "types": "types/index.d.ts",
   "dependencies": {
     "axios": "^1.4.0",
@@ -99,8 +98,8 @@
     ],
     "extraResources": [
       {
-        "from": "dist",
-        "to": "app/dist"
+        "from": "dist/es",
+        "to": "app/dist/es"
       },
       {
         "from": "server-lib",
