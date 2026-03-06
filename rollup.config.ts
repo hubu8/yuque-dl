@@ -17,6 +17,19 @@ export default defineConfig({
   plugins: [
     typescript(),
     terser()
+  ],
+  external: [
+    'log4js',
+    'cli-progress',
+    'axios',
+    'mdast-util-from-markdown',
+    'mdast-util-to-markdown',
+    'ora',
+    'pull-md-img',
+    'markdown-toc',
+    'pako',
+    'semver',
+    'vitepress'
   ]
 })
 
