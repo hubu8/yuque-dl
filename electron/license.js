@@ -19,29 +19,32 @@ Xa2h/DdjTxhnTE508FyvgqEjGjLLo0OBrNQcNmJvrhoXRf3UDnvVjiBxz24GYZ0e
 
 /**
  * 获取机器唯一标识
- * 基于CPU序列号、主板序列号、MAC地址等生成
+ * 基于所有MAC地址、主机名、平台、架构等生成
  */
 export function getMachineId() {
   const interfaces = os.networkInterfaces();
-  let macAddress = '';
+  const macAddresses = [];
   
-  // 获取第一个非本地MAC地址
+  // 获取所有非本地MAC地址并排序，确保顺序一致
   for (const name of Object.keys(interfaces)) {
     for (const iface of interfaces[name]) {
-      if (iface.family === 'IPv4' && !iface.internal) {
-        macAddress = iface.mac;
-        break;
+      if (!iface.internal && iface.mac) {
+        macAddresses.push(iface.mac);
       }
     }
-    if (macAddress) break;
   }
+  
+  // 排序MAC地址，确保顺序一致
+  macAddresses.sort();
   
   // 组合机器信息生成唯一标识
   const machineInfo = [
-    macAddress,
+    macAddresses.join(','),
     os.hostname(),
     os.platform(),
-    os.arch()
+    os.arch(),
+    os.cpus()[0]?.model || '',
+    os.totalmem().toString()
   ].join('|');
   
   // 使用SHA256生成机器码
