@@ -6,7 +6,7 @@
   "scripts": {
     "start": "electron .",
     "build": "electron-builder",
-    "build:win": "electron-builder --win",
+    "build:win": "set CSC_IDENTITY_AUTO_DISCOVERY=false&& electron-builder --win",
     "build:mac": "electron-builder --mac",
     "build:linux": "electron-builder --linux"
   },
@@ -27,7 +27,9 @@
     ],
     "win": {
       "target": ["nsis"],
-      "icon": "icon.png"
+      "icon": "icon.png",
+      "signAndEditExecutable": false,
+      "sign": null
     },
     "mac": {
       "target": ["dmg"],
