@@ -10,5 +10,9 @@ contextBridge.exposeInMainWorld('yuqueAPI', {
   },
   onLog: (callback) => {
     ipcRenderer.on('download-log', (_, data) => callback(data))
-  }
+  },
+  // 授权相关
+  licenseCheck: () => ipcRenderer.invoke('license-check'),
+  licenseActivate: (key) => ipcRenderer.invoke('license-activate', key),
+  licenseCopyMachineId: () => ipcRenderer.invoke('license-copy-machine-id')
 })

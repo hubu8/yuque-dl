@@ -8,10 +8,40 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="app">
+  <!-- 授权激活遮罩 -->
+  <div id="licenseOverlay" class="license-overlay">
+    <div class="license-card">
+      <h2>🔑 软件激活</h2>
+      <p class="license-desc">首次使用需要激活授权，请将机器码发送给管理员获取授权码</p>
+
+      <div class="license-field">
+        <label>机器码</label>
+        <div class="license-code-row">
+          <input type="text" id="machineId" readonly>
+          <button type="button" id="copyMachineIdBtn" class="btn-secondary">复制</button>
+        </div>
+      </div>
+
+      <div class="license-field">
+        <label>授权码</label>
+        <input type="text" id="licenseKeyInput" placeholder="请输入授权码 (如 XXXX-XXXX-XXXX-...)">
+      </div>
+
+      <div id="licenseError" class="license-error" style="display:none;"></div>
+
+      <button type="button" id="activateBtn" class="btn-primary license-btn">激活</button>
+    </div>
+  </div>
+
+  <div class="app" id="mainApp" style="display:none;">
     <div class="header">
-      <h1>📚 语雀知识库下载器</h1>
-      <p class="subtitle">输入知识库地址，一键下载为本地 Markdown 文件</p>
+      <div class="header-row">
+        <div>
+          <h1>📚 语雀知识库下载器</h1>
+          <p class="subtitle">输入知识库地址，一键下载为本地 Markdown 文件</p>
+        </div>
+        <span id="licenseStatus" class="license-status">✅ 已激活</span>
+      </div>
     </div>
 
     <form id="downloadForm" class="form">

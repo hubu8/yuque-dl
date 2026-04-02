@@ -1,5 +1,60 @@
 const $ = (sel) => document.querySelector(sel)
 
+// ========== 授权检查 ==========
+const licenseOverlay = $('#licenseOverlay')
+const mainApp = $('#mainApp')
+const machineIdInput = $('#machineId')
+const licenseKeyInput = $('#licenseKeyInput')
+const copyMachineIdBtn = $('#copyMachineIdBtn')
+const activateBtn = $('#activateBtn')
+const licenseError = $('#licenseError')
+
+async function initLicense() {
+  const status = await window.yuqueAPI.licenseCheck()
+  machineIdInput.value = status.machineId
+
+  if (status.activated) {
+    licenseOverlay.style.display = 'none'
+    mainApp.style.display = 'flex'
+  } else {
+    licenseOverlay.style.display = 'flex'
+    mainApp.style.display = 'none'
+  }
+}
+
+copyMachineIdBtn.addEventListener('click', async () => {
+  await window.yuqueAPI.licenseCopyMachineId()
+  copyMachineIdBtn.textContent = '已复制'
+  setTimeout(() => { copyMachineIdBtn.textContent = '复制' }, 2000)
+})
+
+activateBtn.addEventListener('click', async () => {
+  const key = licenseKeyInput.value.trim()
+  if (!key) {
+    licenseError.textContent = '请输入授权码'
+    licenseError.style.display = 'block'
+    return
+  }
+
+  activateBtn.disabled = true
+  activateBtn.textContent = '验证中...'
+  const result = await window.yuqueAPI.licenseActivate(key)
+  activateBtn.disabled = false
+  activateBtn.textContent = '激活'
+
+  if (result.success) {
+    licenseOverlay.style.display = 'none'
+    mainApp.style.display = 'flex'
+  } else {
+    licenseError.textContent = result.error
+    licenseError.style.display = 'block'
+  }
+})
+
+// 启动时检查授权
+initLicense()
+
+// ========== 主界面逻辑 ==========
 const form = $('#downloadForm')
 const startBtn = $('#startBtn')
 const cancelBtn = $('#cancelBtn')

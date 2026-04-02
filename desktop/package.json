@@ -19,7 +19,10 @@
     "files": [
       "main.js",
       "preload.js",
+      "license.js",
+      "worker.js",
       "renderer/**/*",
+      "keys/public.pem",
       "icon.png"
     ],
     "win": {

@@ -1,6 +1,7 @@
-const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron')
+const { app, BrowserWindow, ipcMain, dialog, shell, clipboard } = require('electron')
 const path = require('path')
 const { fork } = require('child_process')
+const license = require('./license')
 
 let mainWindow
 
@@ -94,4 +95,29 @@ ipcMain.handle('cancel-download', async () => {
     return true
   }
   return false
+})
+
+// ============ 授权相关 ============
+
+// 检查激活状态
+ipcMain.handle('license-check', async () => {
+  return license.checkActivation(app.getPath('userData'))
+})
+
+// 激活授权码
+ipcMain.handle('license-activate', async (_, licenseKey) => {
+  const machineId = license.generateMachineId()
+  const valid = license.validateLicense(machineId, licenseKey)
+  if (valid) {
+    license.saveLicense(app.getPath('userData'), machineId, licenseKey)
+    return { success: true }
+  }
+  return { success: false, error: '授权码无效，请检查后重试' }
+})
+
+// 复制机器码到剪贴板
+ipcMain.handle('license-copy-machine-id', async () => {
+  const machineId = license.generateMachineId()
+  clipboard.writeText(machineId)
+  return machineId
 })
