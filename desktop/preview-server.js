@@ -104,26 +104,31 @@ html, body { height:100%; font-family:var(--font); color:var(--text); background
 body { display:flex; }
 
 /* 侧边栏 */
-.sidebar { width:280px; background:var(--sidebar-bg); border-right:1px solid var(--border); display:flex; flex-direction:column; flex-shrink:0; height:100vh; }
-.sidebar-header { padding:16px 20px; border-bottom:1px solid var(--border); }
-.sidebar-header h2 { font-size:14px; color:var(--text); font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.sidebar-body { flex:1; overflow-y:auto; padding:8px 0; }
+.sidebar { width:300px; background:var(--sidebar-bg); border-right:1px solid var(--border); display:flex; flex-direction:column; flex-shrink:0; height:100vh; }
+.sidebar-header { padding:18px 22px; border-bottom:1px solid var(--border); background:#fff; }
+.sidebar-header h2 { font-size:15px; color:var(--text); font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sidebar-body { flex:1; overflow-y:auto; padding:12px 0; }
 
-.nav-list { list-style:none; }
-.nav-list a { display:block; padding:5px 16px 5px 20px; font-size:13px; color:var(--text2); text-decoration:none; line-height:1.6; border-left:2px solid transparent; transition: all 0.15s; }
+.nav-list { list-style:none; margin:0; padding:0; }
+.nav-list a { display:block; padding:8px 18px 8px 22px; font-size:14px; color:var(--text2); text-decoration:none; line-height:1.7; border-left:3px solid transparent; transition: all 0.15s; }
 .nav-list a:hover { color:var(--accent); background:var(--accent-bg); }
 .nav-list a.active { color:var(--accent); font-weight:600; background:var(--accent-bg); border-left-color:var(--accent); }
+.nav-empty { padding:6px 22px; font-size:13px; color:#c0c4cc; font-style:italic; }
 
 /* 子目录折叠 */
-.nav-dir details summary { display:flex; align-items:center; padding:6px 16px 6px 20px; font-size:12px; font-weight:600; color:var(--text3); cursor:pointer; user-select:none; list-style:none; }
+.nav-dir { margin:2px 0; }
+.nav-dir details summary { display:flex; align-items:center; padding:9px 18px 9px 22px; font-size:14px; font-weight:600; color:var(--text); cursor:pointer; user-select:none; list-style:none; line-height:1.7; transition: background 0.15s; }
+.nav-dir details summary:hover { background:rgba(0,0,0,0.03); }
 .nav-dir details summary::-webkit-details-marker { display:none; }
-.nav-dir details summary::before { content:'▶'; font-size:9px; margin-right:6px; transition:transform 0.2s; color:var(--text3); }
+.nav-dir details summary::before { content:'▶'; font-size:10px; margin-right:8px; transition:transform 0.2s; color:var(--text3); flex-shrink:0; }
 .nav-dir details[open] summary::before { transform:rotate(90deg); }
-.nav-dir details > .nav-list { padding-left:12px; }
+.nav-dir details > .nav-list { padding-left:16px; border-left:1px solid var(--border); margin-left:30px; }
 
 /* 侧边栏滚动条 */
-.sidebar-body::-webkit-scrollbar { width:4px; }
-.sidebar-body::-webkit-scrollbar-thumb { background:#d0d5dd; border-radius:2px; }
+.sidebar-body::-webkit-scrollbar { width:5px; }
+.sidebar-body::-webkit-scrollbar-track { background:transparent; }
+.sidebar-body::-webkit-scrollbar-thumb { background:#d0d5dd; border-radius:3px; }
+.sidebar-body::-webkit-scrollbar-thumb:hover { background:#b0b8c4; }
 
 /* 主内容 */
 .main-wrap { flex:1; overflow-y:auto; display:flex; justify-content:center; }
