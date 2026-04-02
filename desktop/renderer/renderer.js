@@ -4,6 +4,7 @@ const form = $('#downloadForm')
 const startBtn = $('#startBtn')
 const cancelBtn = $('#cancelBtn')
 const selectDirBtn = $('#selectDirBtn')
+const openDistDirBtn = $('#openDistDirBtn')
 const clearLogBtn = $('#clearLogBtn')
 const openDirBtn = $('#openDirBtn')
 const logArea = $('#logArea')
@@ -30,7 +31,15 @@ clearLogBtn.addEventListener('click', () => {
   logArea.innerHTML = ''
 })
 
-// 打开下载目录
+// 打开下载目录（表单旁的按钮）
+openDistDirBtn.addEventListener('click', () => {
+  const dir = $('#distDir').value
+  if (dir) {
+    window.yuqueAPI.openDirectory(dir)
+  }
+})
+
+// 打开下载结果目录
 openDirBtn.addEventListener('click', () => {
   if (resultPath) {
     window.yuqueAPI.openDirectory(resultPath)

@@ -6,9 +6,10 @@ let mainWindow
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 800,
-    height: 680,
-    resizable: false,
+    width: 900,
+    height: 700,
+    minWidth: 600,
+    minHeight: 500,
     title: '语雀知识库下载器',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
