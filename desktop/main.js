@@ -34,12 +34,18 @@ app.on('activate', () => {
 })
 
 // 选择目录
-ipcMain.handle('select-directory', async () => {
+ipcMain.handle('select-directory', async (_, currentDir) => {
   const result = await dialog.showOpenDialog(mainWindow, {
+    defaultPath: currentDir || app.getPath('documents'),
     properties: ['openDirectory', 'createDirectory']
   })
   if (result.canceled) return null
   return result.filePaths[0]
+})
+
+// 获取默认下载路径
+ipcMain.handle('get-default-download-path', () => {
+  return path.join(app.getPath('documents'), 'yuque-download')
 })
 
 // 打开目录
@@ -120,4 +126,103 @@ ipcMain.handle('license-copy-machine-id', async () => {
   const machineId = license.generateMachineId()
   clipboard.writeText(machineId)
   return machineId
+})
+
+// ============ 预览服务 ============
+let previewProcess = null
+let previewPort = null
+
+ipcMain.handle('preview-start', async (_, rootPath) => {
+  // 已有服务在跑
+  if (previewProcess && previewPort) {
+    return { success: true, port: previewPort }
+  }
+
+  // 先停掉旧的
+  if (previewProcess) {
+    previewProcess.kill()
+    previewProcess = null
+    previewPort = null
+  }
+
+  return new Promise((resolve) => {
+    let resolved = false
+    const done = (result) => {
+      if (resolved) return
+      resolved = true
+      resolve(result)
+    }
+
+    try {
+      previewProcess = fork(path.join(__dirname, 'preview-server.js'), [], {
+        stdio: ['pipe', 'pipe', 'pipe', 'ipc']
+      })
+    } catch (err) {
+      done({ success: false, error: '启动预览进程失败: ' + err.message })
+      return
+    }
+
+    // 超时 8 秒
+    const timer = setTimeout(() => {
+      done({ success: false, error: '启动超时，请检查目录是否正确' })
+      if (previewProcess) { previewProcess.kill(); previewProcess = null }
+    }, 8000)
+
+    previewProcess.send({ action: 'start', rootPath, port: 18888 })
+
+    previewProcess.on('message', (msg) => {
+      if (msg.type === 'started') {
+        clearTimeout(timer)
+        previewPort = msg.data.port
+        done({ success: true, port: previewPort })
+      } else if (msg.type === 'error') {
+        clearTimeout(timer)
+        done({ success: false, error: msg.data })
+      }
+    })
+
+    previewProcess.on('error', (err) => {
+      clearTimeout(timer)
+      done({ success: false, error: err.message })
+    })
+
+    previewProcess.on('exit', (code) => {
+      clearTimeout(timer)
+      previewProcess = null
+      previewPort = null
+      done({ success: false, error: `预览进程异常退出 (code: ${code})` })
+    })
+  })
+})
+
+ipcMain.handle('preview-stop', async () => {
+  if (previewProcess) {
+    previewProcess.send({ action: 'stop' })
+    previewProcess.kill()
+    previewProcess = null
+    previewPort = null
+  }
+  return true
+})
+
+ipcMain.handle('preview-open', async (_, url) => {
+  shell.openExternal(url)
+})
+
+// 选择预览目录
+ipcMain.handle('select-preview-directory', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openDirectory'],
+    title: '选择已下载的知识库目录'
+  })
+  if (result.canceled) return null
+  return result.filePaths[0]
+})
+
+// 退出时清理预览服务
+app.on('before-quit', () => {
+  if (previewProcess) {
+    previewProcess.kill()
+    previewProcess = null
+  }
 })

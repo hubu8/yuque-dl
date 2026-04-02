@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' http://127.0.0.1:*">
   <title>语雀知识库下载器</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -37,7 +37,8 @@
     <!-- Tab 导航 -->
     <div class="tab-bar">
       <button class="tab-item active" data-tab="download">📥 下载</button>
-      <button class="tab-item" data-tab="help">📖 使用帮助</button>
+      <button class="tab-item" data-tab="preview">🌐 预览</button>
+      <button class="tab-item" data-tab="help">📖 帮助</button>
       <span id="licenseStatus" class="license-status">✅ 已激活</span>
     </div>
 
@@ -56,7 +57,7 @@
       <div class="form-group">
         <label for="distDir">下载目录</label>
         <div class="input-with-btn">
-          <input type="text" id="distDir" value="download" readonly>
+          <input type="text" id="distDir" placeholder="选择下载目录" readonly>
           <button type="button" id="selectDirBtn" class="btn-secondary">选择目录</button>
           <button type="button" id="openDistDirBtn" class="btn-secondary" title="在资源管理器中打开">📂 打开</button>
         </div>
@@ -143,6 +144,46 @@
       <button type="button" id="openDirBtn" class="btn-text">打开目录</button>
     </div>
     </div><!-- /tabDownload -->
+
+    <!-- ====== 预览页 ====== -->
+    <div id="tabPreview" class="tab-page tab-page-flex">
+      <div class="preview-panel">
+        <div class="preview-header">
+          <h3>📂 Web 预览</h3>
+          <p class="preview-desc">选择已下载的知识库目录，启动本地预览服务，在浏览器中阅读</p>
+        </div>
+
+        <div class="form-group">
+          <label>知识库目录</label>
+          <div class="input-with-btn">
+            <input type="text" id="previewDir" placeholder="选择已下载的知识库文件夹" readonly>
+            <button type="button" id="selectPreviewDirBtn" class="btn-secondary">选择目录</button>
+          </div>
+        </div>
+
+        <div class="preview-actions">
+          <button type="button" id="previewStartBtn" class="btn-primary">启动预览</button>
+          <button type="button" id="previewStopBtn" class="btn-danger" disabled>停止</button>
+        </div>
+
+        <div id="previewStatus" class="preview-status" style="display:none;">
+          <span id="previewStatusIcon">🟢</span>
+          <span>预览服务运行中：</span>
+          <a id="previewLink" href="#" class="preview-link">http://127.0.0.1:18888</a>
+          <button type="button" id="previewOpenBtn" class="btn-text">在浏览器中打开</button>
+        </div>
+
+        <div class="preview-guide">
+          <div class="help-tip">
+            💡 使用说明：<br>
+            1. 先在「下载」页下载知识库<br>
+            2. 选择下载生成的知识库文件夹（包含 .md 文件的目录）<br>
+            3. 点击「启动预览」，会自动在浏览器中打开预览页面<br>
+            4. 预览服务会在本地 18888 端口运行，关闭软件时自动停止
+          </div>
+        </div>
+      </div>
+    </div><!-- /tabPreview -->
 
     <!-- ====== 帮助页 ====== -->
     <div id="tabHelp" class="tab-page tab-page-scroll">

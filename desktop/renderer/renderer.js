@@ -86,10 +86,16 @@ let resultPath = ''
 
 // 选择目录
 selectDirBtn.addEventListener('click', async () => {
-  const dir = await window.yuqueAPI.selectDirectory()
+  const currentDir = $('#distDir').value
+  const dir = await window.yuqueAPI.selectDirectory(currentDir)
   if (dir) {
     $('#distDir').value = dir
   }
+})
+
+// 启动时设置默认下载路径
+window.yuqueAPI.getDefaultDownloadPath().then(p => {
+  $('#distDir').value = p
 })
 
 // 清空日志
@@ -201,4 +207,65 @@ window.yuqueAPI.onProgress((data) => {
 window.yuqueAPI.onLog((msg) => {
   const type = msg.startsWith('✓') ? 'success' : msg.startsWith('✗') ? 'error' : 'info'
   addLog(msg, type)
+})
+
+// ========== 预览功能 ==========
+const previewDirInput = $('#previewDir')
+const selectPreviewDirBtn = $('#selectPreviewDirBtn')
+const previewStartBtn = $('#previewStartBtn')
+const previewStopBtn = $('#previewStopBtn')
+const previewStatus = $('#previewStatus')
+const previewLink = $('#previewLink')
+const previewOpenBtn = $('#previewOpenBtn')
+
+let previewRunning = false
+
+selectPreviewDirBtn.addEventListener('click', async () => {
+  const dir = await window.yuqueAPI.selectPreviewDirectory()
+  if (dir) previewDirInput.value = dir
+})
+
+previewStartBtn.addEventListener('click', async () => {
+  const dir = previewDirInput.value.trim()
+  if (!dir) return
+
+  previewStartBtn.disabled = true
+  previewStartBtn.textContent = '启动中...'
+
+  const result = await window.yuqueAPI.previewStart(dir)
+
+  if (result.success) {
+    previewRunning = true
+    previewStopBtn.disabled = false
+    previewStartBtn.textContent = '已启动'
+    const url = `http://127.0.0.1:${result.port}`
+    previewLink.textContent = url
+    previewLink.href = url
+    previewStatus.style.display = 'flex'
+    window.yuqueAPI.previewOpen(url)
+  } else {
+    previewStartBtn.disabled = false
+    previewStartBtn.textContent = '启动预览'
+    previewStatus.style.display = 'none'
+    addLog('预览启动失败: ' + result.error, 'error')
+  }
+})
+
+previewStopBtn.addEventListener('click', async () => {
+  await window.yuqueAPI.previewStop()
+  previewRunning = false
+  previewStartBtn.disabled = false
+  previewStartBtn.textContent = '启动预览'
+  previewStopBtn.disabled = true
+  previewStatus.style.display = 'none'
+})
+
+previewOpenBtn.addEventListener('click', () => {
+  window.yuqueAPI.previewOpen(previewLink.href)
+})
+
+// 阻止预览链接默认行为
+previewLink.addEventListener('click', (e) => {
+  e.preventDefault()
+  window.yuqueAPI.previewOpen(previewLink.href)
 })

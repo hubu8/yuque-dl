@@ -698,3 +698,64 @@ body {
 .tab-page-scroll::-webkit-scrollbar-thumb:hover {
   background: #b0b8c4;
 }
+
+/* ========== 预览页 ========== */
+.preview-panel {
+  background: var(--c-card);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--c-border);
+}
+
+.preview-header {
+  margin-bottom: 18px;
+}
+
+.preview-header h3 {
+  font-size: 16px;
+  color: var(--c-text);
+  margin-bottom: 4px;
+}
+
+.preview-desc {
+  font-size: 12px;
+  color: var(--c-text3);
+}
+
+.preview-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+  margin-bottom: 16px;
+}
+
+.preview-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #ecfdf3;
+  border: 1px solid #b7ebc9;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #1a7a3a;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.preview-link {
+  color: #165dff;
+  font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
+  font-size: 13px;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.preview-link:hover {
+  text-decoration: underline;
+}
+
+.preview-guide {
+  margin-top: 8px;
+}

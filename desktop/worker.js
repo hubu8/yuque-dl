@@ -161,58 +161,107 @@ async function runDownload(params) {
   const total = tocList.length
   let downloaded = 0
   let errCount = 0
-  const errors = []
   const articleUrlPrefix = url.replace(new RegExp(`(.*?/${bookSlug}).*`), '$1')
+
+  // uuid → { pathTitleList, toc } 用于还原父子层级路径
+  const uuidMap = new Map()
 
   for (let i = 0; i < total; i++) {
     const item = tocList[i]
     if (typeof item.type !== 'string') continue
     const itemType = item.type.toLowerCase()
 
-    // 目录类型或外链类型 - 创建文件夹
-    if (itemType === ARTICLE_TOC_TYPE.TITLE || item['child_uuid'] !== '' || itemType === ARTICLE_TOC_TYPE.LINK) {
+    // ---- 目录类型 / 有子节点 / 外链 ----
+    if (itemType === ARTICLE_TOC_TYPE.TITLE
+      || item['child_uuid'] !== ''
+      || itemType === ARTICLE_TOC_TYPE.LINK
+    ) {
+      // 通过 parent_uuid 向上回溯，构建完整路径
+      let tempItem = item
+      const pathTitleList = []
+      while (tempItem) {
+        pathTitleList.unshift(fixPath(tempItem.title))
+        const parent = uuidMap.get(tempItem['parent_uuid'])
+        tempItem = parent ? parent.toc : undefined
+      }
+
+      const progressItem = { pathTitleList, toc: item }
+
       if (itemType !== ARTICLE_TOC_TYPE.LINK) {
-        const dirPath = path.join(bookPath, fixPath(item.title))
-        await mkdir(dirPath, { recursive: true })
+        await mkdir(path.join(bookPath, ...pathTitleList.map(fixPath)), { recursive: true })
       }
-      downloaded++
-      sendProgress({ current: downloaded, total, title: item.title })
-      if (itemType !== ARTICLE_CONTENT_TYPE.DOC) continue
+
+      // 即是文档也是目录 → 先建文件夹再下载文档
+      if (itemType === ARTICLE_CONTENT_TYPE.DOC) {
+        await docHandle(item)
+      } else {
+        uuidMap.set(item.uuid, progressItem)
+        downloaded++
+        sendProgress({ current: downloaded, total, title: item.title })
+      }
+      continue
     }
 
-    // 文档类型 - 下载
+    // ---- 普通文档 ----
     if (item.url) {
-      const savePath = bookPath
-      const saveFilePath = path.join(bookPath, `${fixPath(item.title)}.md`)
-      const articleUrl = `${articleUrlPrefix}/${item.url}`
-
-      try {
-        await downloadArticle({
-          bookId, itemUrl: item.url, savePath, saveFilePath,
-          uuid: item.uuid, articleTitle: item.title,
-          articleUrl, host, imageServiceDomains: info.imageServiceDomains || []
-        }, { token, key, ignoreImg, ignoreAttachments, toc,
-          convertMarkdownVideoLinks, hideFooter, distDir, incremental })
-
-        sendLog(`✓ ${item.title}`)
-      } catch (e) {
-        errCount++
-        errors.push({ title: item.title, error: e.message })
-        sendLog(`✗ ${item.title}: ${e.message}`)
-      }
-
-      downloaded++
-      sendProgress({ current: downloaded, total, title: item.title })
+      await docHandle(item)
     }
+  }
+
+  async function docHandle(item) {
+    const itemType = item.type.toLowerCase()
+    // 获取父级路径
+    const parent = uuidMap.get(item['parent_uuid'])
+    const parentPathList = parent ? parent.pathTitleList : []
+
+    const fileName = fixPath(item.title)
+    const pathTitleList = [...parentPathList, fileName]
+
+    // 如果既是标题又是文档（有 child_uuid），文件存为 子目录/index.md
+    let mdRelPath, saveRelDir
+    if (itemType === ARTICLE_CONTENT_TYPE.DOC && item['child_uuid']) {
+      mdRelPath = [...parentPathList, fileName, 'index.md'].map(fixPath).join(path.sep)
+      saveRelDir = pathTitleList.map(fixPath).join(path.sep)
+    } else {
+      mdRelPath = [...parentPathList, `${fileName}.md`].map(fixPath).join(path.sep)
+      saveRelDir = parentPathList.map(fixPath).join(path.sep)
+    }
+
+    const saveFilePath = path.resolve(bookPath, mdRelPath)
+    const savePath = path.resolve(bookPath, saveRelDir)
+    const articleUrl = `${articleUrlPrefix}/${item.url}`
+
+    try {
+      await downloadArticle({
+        bookId, itemUrl: item.url, savePath, saveFilePath,
+        uuid: item.uuid, articleTitle: item.title,
+        articleUrl, host, imageServiceDomains: info.imageServiceDomains || []
+      }, { token, key, ignoreImg, ignoreAttachments, toc,
+        convertMarkdownVideoLinks, hideFooter, distDir, incremental })
+
+      sendLog(`✓ ${parentPathList.length > 0 ? parentPathList.join('/') + '/' : ''}${item.title}`)
+    } catch (e) {
+      errCount++
+      sendLog(`✗ ${item.title}: ${e.message}`)
+    }
+
+    uuidMap.set(item.uuid, { pathTitleList, toc: item })
+    downloaded++
+    sendProgress({ current: downloaded, total, title: item.title })
   }
 
   // 生成 index.md 目录文件
   const summaryLines = [`# ${bookName}\n`]
-  tocList.forEach(item => {
-    if (item.type?.toLowerCase() === 'doc' && item.url) {
-      summaryLines.push(`- [${item.title}](./${fixPath(item.title)}.md)`)
+  for (const [uuid, info] of uuidMap) {
+    if (info.toc.url && info.toc.type?.toLowerCase() === 'doc') {
+      const relPath = info.pathTitleList.map(fixPath)
+      const indent = '  '.repeat(Math.max(0, relPath.length - 1))
+      const fileName = info.toc['child_uuid']
+        ? relPath.join('/') + '/index.md'
+        : relPath.slice(0, -1).concat(relPath.at(-1) + '.md').join('/')
+      summaryLines.push(`${indent}- [${info.toc.title}](./${fileName})`)
     }
-  })
+  }
   await writeFile(path.join(bookPath, 'index.md'), summaryLines.join('\n'), 'utf-8')
 
   const msg = errCount > 0
