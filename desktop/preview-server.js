@@ -50,7 +50,7 @@ function buildSidebar(rootPath, subDir, currentPath, depth) {
   }).sort()
 
   if (depth > 0 && mdFiles.length === 0 && dirs.length === 0 && !items.includes('index.md')) {
-    return '<ul class="nav-list"><li class="nav-empty">（空）</li></ul>'
+    return ''
   }
 
   let html = '<ul class="nav-list">'
@@ -64,6 +64,7 @@ function buildSidebar(rootPath, subDir, currentPath, depth) {
   for (const d of dirs) {
     const sub = subDir ? `${subDir}/${d}` : d
     const children = buildSidebar(rootPath, sub, currentPath, depth + 1)
+    if (!children) continue
     const subPrefix = `/${sub}/`
     const isOpen = depth < 1 || currentPath.startsWith(subPrefix) ? ' open' : ''
     html += `<li class="nav-dir"><details${isOpen}><summary>📁 ${esc(d)}</summary>${children}</details></li>`
@@ -101,22 +102,22 @@ ${hljsCss}
 html, body { height:100%; font-family:var(--font); color:var(--text); background:var(--bg); }
 body { display:flex; }
 
-.sidebar { width:300px; background:var(--sidebar-bg); border-right:1px solid var(--border); display:flex; flex-direction:column; flex-shrink:0; height:100vh; }
-.sidebar-header { padding:18px 22px; border-bottom:1px solid var(--border); background:#fff; }
-.sidebar-header h2 { font-size:15px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.sidebar-body { flex:1; overflow-y:auto; padding:12px 0; }
+.sidebar { width:280px; background:var(--sidebar-bg); border-right:1px solid var(--border); display:flex; flex-direction:column; flex-shrink:0; height:100vh; }
+.sidebar-header { padding:16px 20px; border-bottom:1px solid var(--border); background:#fff; }
+.sidebar-header h2 { font-size:14px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sidebar-body { flex:1; overflow-y:auto; padding:8px 0; }
 .nav-list { list-style:none; margin:0; padding:0; }
-.nav-list a { display:block; padding:8px 18px 8px 22px; font-size:14px; color:var(--text2); text-decoration:none; line-height:1.7; border-left:3px solid transparent; transition:all .15s; }
+.nav-list a { display:block; padding:5px 14px 5px 12px; font-size:13px; color:var(--text2); text-decoration:none; line-height:1.6; border-radius:4px; margin:1px 8px; transition:all .15s; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .nav-list a:hover { color:var(--accent); background:var(--accent-bg); }
-.nav-list a.active { color:var(--accent); font-weight:600; background:var(--accent-bg); border-left-color:var(--accent); }
-.nav-empty { padding:6px 22px; font-size:13px; color:#c0c4cc; font-style:italic; }
-.nav-dir { margin:2px 0; }
-.nav-dir details summary { display:flex; align-items:center; padding:9px 18px 9px 22px; font-size:14px; font-weight:600; color:var(--text); cursor:pointer; user-select:none; list-style:none; line-height:1.7; }
-.nav-dir details summary:hover { background:rgba(0,0,0,.03); }
+.nav-list a.active { color:var(--accent); font-weight:600; background:var(--accent-bg); }
+.nav-empty { padding:4px 12px; font-size:12px; color:#c0c4cc; font-style:italic; }
+.nav-dir { margin:0; }
+.nav-dir details summary { display:flex; align-items:center; padding:6px 14px 6px 12px; font-size:13px; font-weight:600; color:var(--text); cursor:pointer; user-select:none; list-style:none; line-height:1.6; margin:1px 8px; border-radius:4px; }
+.nav-dir details summary:hover { background:rgba(0,0,0,.04); }
 .nav-dir details summary::-webkit-details-marker { display:none; }
-.nav-dir details summary::before { content:'▶'; font-size:10px; margin-right:8px; transition:transform .2s; color:var(--text3); }
+.nav-dir details summary::before { content:''; width:0; height:0; border-left:5px solid var(--text3); border-top:4px solid transparent; border-bottom:4px solid transparent; margin-right:6px; transition:transform .15s; flex-shrink:0; }
 .nav-dir details[open] summary::before { transform:rotate(90deg); }
-.nav-dir details>.nav-list { padding-left:16px; border-left:1px solid var(--border); margin-left:30px; }
+.nav-dir details>.nav-list { margin-left:10px; padding-left:10px; border-left:1px solid #e0e2e6; }
 .sidebar-body::-webkit-scrollbar { width:5px; }
 .sidebar-body::-webkit-scrollbar-thumb { background:#d0d5dd; border-radius:3px; }
 </style>
