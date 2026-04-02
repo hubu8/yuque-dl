@@ -155,16 +155,24 @@ ipcMain.handle('preview-start', async (_, rootPath) => {
 
     try {
       previewProcess = fork(path.join(__dirname, 'preview-server.js'), [], {
-        stdio: ['pipe', 'pipe', 'pipe', 'ipc']
+        stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
+        cwd: __dirname
       })
     } catch (err) {
       done({ success: false, error: '启动预览进程失败: ' + err.message })
       return
     }
 
+    // 捕获 stderr
+    let stderrData = ''
+    if (previewProcess.stderr) {
+      previewProcess.stderr.on('data', (chunk) => { stderrData += chunk.toString() })
+    }
+
     // 超时 8 秒
     const timer = setTimeout(() => {
-      done({ success: false, error: '启动超时，请检查目录是否正确' })
+      const errMsg = stderrData.trim() || '启动超时，请检查目录是否正确'
+      done({ success: false, error: errMsg })
       if (previewProcess) { previewProcess.kill(); previewProcess = null }
     }, 8000)
 
@@ -190,7 +198,8 @@ ipcMain.handle('preview-start', async (_, rootPath) => {
       clearTimeout(timer)
       previewProcess = null
       previewPort = null
-      done({ success: false, error: `预览进程异常退出 (code: ${code})` })
+      const errMsg = stderrData.trim() || `预览进程异常退出 (code: ${code})`
+      done({ success: false, error: errMsg })
     })
   })
 })

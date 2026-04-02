@@ -744,6 +744,12 @@ body {
   flex-wrap: wrap;
 }
 
+.preview-status.preview-error {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
 .preview-link {
   color: #165dff;
   font-family: "Cascadia Code", "Fira Code", Consolas, monospace;

@@ -242,12 +242,18 @@ previewStartBtn.addEventListener('click', async () => {
     previewLink.textContent = url
     previewLink.href = url
     previewStatus.style.display = 'flex'
+    previewStatus.className = 'preview-status'
+    $('#previewStatusIcon').textContent = '🟢'
     window.yuqueAPI.previewOpen(url)
   } else {
     previewStartBtn.disabled = false
     previewStartBtn.textContent = '启动预览'
-    previewStatus.style.display = 'none'
-    addLog('预览启动失败: ' + result.error, 'error')
+    // 在预览页面直接显示错误
+    previewStatus.style.display = 'flex'
+    previewStatus.className = 'preview-status preview-error'
+    $('#previewStatusIcon').textContent = '🔴'
+    previewLink.textContent = result.error
+    previewLink.href = '#'
   }
 })
 
