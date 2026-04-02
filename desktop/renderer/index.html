@@ -211,6 +211,13 @@
               <div class="step-desc">点击「开始下载」，等待完成后点击「打开目录」查看文件</div>
             </div>
           </div>
+          <div class="help-step">
+            <span class="step-num">4</span>
+            <div>
+              <div class="step-title">在线预览（可选）</div>
+              <div class="step-desc">切换到「🌐 预览」页，选择下载好的知识库文件夹，点击「启动预览」即可在浏览器中阅读</div>
+            </div>
+          </div>
         </div>
 
         <h2>下载私有知识库</h2>
@@ -223,6 +230,17 @@
           <li>在软件中展开「🔐 认证设置」，粘贴到 Token 输入框</li>
         </ol>
         <div class="help-tip">💡 企业版语雀的 Cookie 名称可能不同，请在 Cookie Key 中填写实际名称。</div>
+
+        <h2>Web 预览</h2>
+        <p>下载完成后，可以通过内置预览服务在浏览器中阅读知识库：</p>
+        <ol class="help-list">
+          <li>切换到「🌐 预览」标签页</li>
+          <li>点击「选择目录」，选择下载生成的知识库文件夹（包含 index.md 的目录）</li>
+          <li>点击「启动预览」，浏览器会自动打开预览页面</li>
+          <li>左侧为文件夹树形导航，点击文档名即可阅读</li>
+          <li>使用完毕后点击「停止」关闭预览服务，或直接关闭软件会自动停止</li>
+        </ol>
+        <div class="help-tip">💡 预览服务运行在本地 18888 端口，仅本机可访问，不会暴露到网络。</div>
 
         <h2>高级选项说明</h2>
         <table class="help-table">
@@ -261,6 +279,10 @@
           <details>
             <summary>部分文档下载失败</summary>
             <p>画板和数据表类型暂不支持下载，日志中会显示具体失败原因。</p>
+          </details>
+          <details>
+            <summary>预览启动失败</summary>
+            <p>请确认选择的是包含 .md 文件的知识库目录。如果端口 18888 被占用，服务会自动尝试下一个端口。</p>
           </details>
           <details>
             <summary>换电脑后需要重新激活</summary>
