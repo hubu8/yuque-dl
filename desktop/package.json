@@ -1,0 +1,62 @@
+{
+  "name": "yuque-dl-desktop",
+  "version": "1.0.0",
+  "description": "语雀知识库下载工具 - 桌面版",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux"
+  },
+  "build": {
+    "appId": "com.yuque-dl.desktop",
+    "productName": "语雀知识库下载器",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*",
+      "icon.png"
+    ],
+    "win": {
+      "target": ["nsis"],
+      "icon": "icon.png"
+    },
+    "mac": {
+      "target": ["dmg"],
+      "icon": "icon.png"
+    },
+    "linux": {
+      "target": ["AppImage"],
+      "icon": "icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "语雀知识库下载器"
+    }
+  },
+  "dependencies": {
+    "axios": "^1.4.0",
+    "cli-progress": "^3.12.0",
+    "log4js": "^6.9.1",
+    "markdown-toc": "^1.2.0",
+    "mdast-util-from-markdown": "^2.0.1",
+    "mdast-util-to-markdown": "^2.1.0",
+    "ora": "^7.0.1",
+    "pako": "1.0.11",
+    "pull-md-img": "^0.0.69",
+    "rand-user-agent": "1.0.109",
+    "semver": "^7.6.0"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.13.3"
+  }
+}

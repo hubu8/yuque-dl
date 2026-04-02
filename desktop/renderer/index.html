@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'">
+  <title>语雀知识库下载器</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <div class="header">
+      <h1>📚 语雀知识库下载器</h1>
+      <p class="subtitle">输入知识库地址，一键下载为本地 Markdown 文件</p>
+    </div>
+
+    <form id="downloadForm" class="form">
+      <!-- 知识库 URL -->
+      <div class="form-group">
+        <label for="url">知识库 URL <span class="required">*</span></label>
+        <input type="url" id="url" placeholder="https://www.yuque.com/xxx/yyy" required>
+        <span class="hint">语雀知识库的完整地址</span>
+      </div>
+
+      <!-- 下载目录 -->
+      <div class="form-group">
+        <label for="distDir">下载目录</label>
+        <div class="input-with-btn">
+          <input type="text" id="distDir" value="download" readonly>
+          <button type="button" id="selectDirBtn" class="btn-secondary">选择目录</button>
+        </div>
+      </div>
+
+      <!-- Token 认证 -->
+      <details class="advanced-section">
+        <summary>🔐 认证设置（私有知识库需要）</summary>
+        <div class="form-group">
+          <label for="token">Token</label>
+          <input type="text" id="token" placeholder="cookie 中 _yuque_session 的值">
+          <span class="hint">私有知识库需要填写，从浏览器 Cookie 中获取</span>
+        </div>
+        <div class="form-group">
+          <label for="key">Cookie Key</label>
+          <input type="text" id="key" placeholder="_yuque_session">
+          <span class="hint">默认 _yuque_session，企业版可能不同</span>
+        </div>
+      </details>
+
+      <!-- 高级选项 -->
+      <details class="advanced-section">
+        <summary>⚙️ 高级选项</summary>
+        <div class="options-grid">
+          <label class="checkbox-label">
+            <input type="checkbox" id="ignoreImg">
+            <span>忽略图片</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="ignoreAttachments">
+            <span>忽略附件</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="toc">
+            <span>生成文档 TOC</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="incremental">
+            <span>增量下载</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="convertMarkdownVideoLinks">
+            <span>视频链接转 video 标签</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="hideFooter">
+            <span>隐藏页脚信息</span>
+          </label>
+        </div>
+      </details>
+
+      <!-- 操作按钮 -->
+      <div class="actions">
+        <button type="submit" id="startBtn" class="btn-primary">开始下载</button>
+        <button type="button" id="cancelBtn" class="btn-danger" disabled>取消下载</button>
+      </div>
+    </form>
+
+    <!-- 进度条 -->
+    <div id="progressSection" class="progress-section" style="display:none;">
+      <div class="progress-header">
+        <span id="progressText">准备中...</span>
+        <span id="progressPercent">0%</span>
+      </div>
+      <div class="progress-bar">
+        <div id="progressFill" class="progress-fill"></div>
+      </div>
+    </div>
+
+    <!-- 日志输出 -->
+    <div class="log-section">
+      <div class="log-header">
+        <span>📋 日志</span>
+        <button type="button" id="clearLogBtn" class="btn-text">清空</button>
+      </div>
+      <div id="logArea" class="log-area">
+        <div class="log-item log-info">等待开始...</div>
+      </div>
+    </div>
+
+    <!-- 完成提示 -->
+    <div id="resultSection" class="result-section" style="display:none;">
+      <span id="resultText"></span>
+      <button type="button" id="openDirBtn" class="btn-text">打开目录</button>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
