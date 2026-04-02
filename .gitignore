@@ -142,3 +142,4 @@ temp
 
 # 私钥 (绝对不要提交)
 desktop/release/
+package-lock.json
