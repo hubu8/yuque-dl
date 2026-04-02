@@ -34,15 +34,15 @@
   </div>
 
   <div class="app" id="mainApp" style="display:none;">
-    <div class="header">
-      <div class="header-row">
-        <div>
-          <h1>📚 语雀知识库下载器</h1>
-          <p class="subtitle">输入知识库地址，一键下载为本地 Markdown 文件</p>
-        </div>
-        <span id="licenseStatus" class="license-status">✅ 已激活</span>
-      </div>
+    <!-- Tab 导航 -->
+    <div class="tab-bar">
+      <button class="tab-item active" data-tab="download">📥 下载</button>
+      <button class="tab-item" data-tab="help">📖 使用帮助</button>
+      <span id="licenseStatus" class="license-status">✅ 已激活</span>
     </div>
+
+    <!-- ====== 下载页 ====== -->
+    <div id="tabDownload" class="tab-page tab-page-flex active">
 
     <form id="downloadForm" class="form">
       <!-- 知识库 URL -->
@@ -142,7 +142,93 @@
       <span id="resultText"></span>
       <button type="button" id="openDirBtn" class="btn-text">打开目录</button>
     </div>
-  </div>
+    </div><!-- /tabDownload -->
+
+    <!-- ====== 帮助页 ====== -->
+    <div id="tabHelp" class="tab-page tab-page-scroll">
+      <div class="help-content">
+        <h2>快速开始</h2>
+        <div class="help-steps">
+          <div class="help-step">
+            <span class="step-num">1</span>
+            <div>
+              <div class="step-title">复制知识库地址</div>
+              <div class="step-desc">打开语雀，进入要下载的知识库，复制浏览器地址栏 URL<br>格式如：<code>https://www.yuque.com/用户名/知识库名</code></div>
+            </div>
+          </div>
+          <div class="help-step">
+            <span class="step-num">2</span>
+            <div>
+              <div class="step-title">粘贴并选择目录</div>
+              <div class="step-desc">将 URL 粘贴到「知识库 URL」输入框，点击「选择目录」设置保存位置</div>
+            </div>
+          </div>
+          <div class="help-step">
+            <span class="step-num">3</span>
+            <div>
+              <div class="step-title">开始下载</div>
+              <div class="step-desc">点击「开始下载」，等待完成后点击「打开目录」查看文件</div>
+            </div>
+          </div>
+        </div>
+
+        <h2>下载私有知识库</h2>
+        <p>如果知识库需要登录才能访问，需要填写 Token：</p>
+        <ol class="help-list">
+          <li>在浏览器中登录语雀</li>
+          <li>按 <code>F12</code> 打开开发者工具，切换到「应用」(Application) 标签</li>
+          <li>左侧找到 Cookie → <code>https://www.yuque.com</code></li>
+          <li>找到 <code>_yuque_session</code>，复制它的值</li>
+          <li>在软件中展开「🔐 认证设置」，粘贴到 Token 输入框</li>
+        </ol>
+        <div class="help-tip">💡 企业版语雀的 Cookie 名称可能不同，请在 Cookie Key 中填写实际名称。</div>
+
+        <h2>高级选项说明</h2>
+        <table class="help-table">
+          <thead><tr><th>选项</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>忽略图片</td><td>不下载文档中的图片，仅保留文字</td></tr>
+            <tr><td>忽略附件</td><td>不下载文档中的附件文件</td></tr>
+            <tr><td>生成文档 TOC</td><td>在每篇文档中生成目录索引</td></tr>
+            <tr><td>增量下载</td><td>只下载新增或更新的文档，适合重复下载</td></tr>
+            <tr><td>视频链接转 video 标签</td><td>将视频链接转为 HTML 标签，方便本地播放</td></tr>
+            <tr><td>隐藏页脚信息</td><td>不在文档末尾添加更新时间和原文链接</td></tr>
+          </tbody>
+        </table>
+
+        <h2>下载结果</h2>
+        <pre class="help-tree">下载目录/
+└── 知识库名称/
+    ├── index.md          ← 目录索引
+    ├── 文档标题1.md
+    ├── 文档标题2.md
+    ├── 子目录/
+    │   └── 文档标题3.md
+    └── ...</pre>
+        <p>所有文档均为标准 Markdown 格式，可用任意编辑器打开。</p>
+
+        <h2>常见问题</h2>
+        <div class="help-faq">
+          <details>
+            <summary>提示"未找到知识库 ID"</summary>
+            <p>请检查 URL 是否正确，确保是知识库地址而不是单篇文档地址。</p>
+          </details>
+          <details>
+            <summary>提示"知识库目录为空"</summary>
+            <p>知识库可能需要登录才能访问，请在「认证设置」中填写 Token。</p>
+          </details>
+          <details>
+            <summary>部分文档下载失败</summary>
+            <p>画板和数据表类型暂不支持下载，日志中会显示具体失败原因。</p>
+          </details>
+          <details>
+            <summary>换电脑后需要重新激活</summary>
+            <p>授权码与硬件绑定，请将新电脑的机器码发送给管理员获取新授权码。</p>
+          </details>
+        </div>
+      </div>
+    </div><!-- /tabHelp -->
+  </div><!-- /app -->
 
   <script src="renderer.js"></script>
 </body>

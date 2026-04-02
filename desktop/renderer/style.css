@@ -47,6 +47,69 @@ body {
   .app { padding: 12px 12px; }
 }
 
+/* ========== Tab 导航 ========== */
+.tab-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 14px;
+  flex-shrink: 0;
+  border-bottom: 2px solid var(--c-border);
+  padding-bottom: 0;
+}
+
+.tab-item {
+  padding: 8px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-text3);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.tab-item:hover { color: var(--c-text2); }
+
+.tab-item.active {
+  color: var(--c-accent);
+  border-bottom-color: var(--c-accent);
+}
+
+.tab-bar .license-status {
+  margin-left: auto;
+}
+
+.tab-page {
+  display: none;
+}
+
+.tab-page.active {
+  display: flex;
+}
+
+.tab-page-flex {
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.tab-page-flex.active {
+  display: flex;
+}
+
+.tab-page-scroll {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.tab-page-scroll.active {
+  display: block;
+}
+
 /* ========== 头部 ========== */
 .header {
   text-align: center;
@@ -447,5 +510,191 @@ body {
   border-radius: 3px;
 }
 .log-area::-webkit-scrollbar-thumb:hover {
+  background: #b0b8c4;
+}
+
+/* ========== 帮助页 ========== */
+.help-content {
+  padding: 4px 8px 32px;
+}
+
+.help-content h2 {
+  font-size: 15px;
+  color: var(--c-text);
+  margin: 24px 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--c-border);
+}
+
+.help-content h2:first-child {
+  margin-top: 4px;
+}
+
+.help-content p {
+  font-size: 13px;
+  color: var(--c-text2);
+  margin: 6px 0;
+  line-height: 1.7;
+}
+
+.help-content code {
+  background: #f0f2f5;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
+  color: var(--c-accent);
+}
+
+/* 步骤卡片 */
+.help-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.help-step {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  background: var(--c-card);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+
+.step-num {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  background: var(--c-accent);
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.step-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-text);
+  margin-bottom: 2px;
+}
+
+.step-desc {
+  font-size: 12px;
+  color: var(--c-text3);
+  line-height: 1.6;
+}
+
+/* 有序列表 */
+.help-list {
+  margin: 8px 0 8px 20px;
+  font-size: 13px;
+  color: var(--c-text2);
+  line-height: 1.8;
+}
+
+/* 提示框 */
+.help-tip {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: #1e40af;
+  margin: 10px 0;
+  line-height: 1.6;
+}
+
+/* 表格 */
+.help-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin: 8px 0;
+}
+
+.help-table th {
+  background: #fafbfc;
+  text-align: left;
+  padding: 8px 12px;
+  font-weight: 600;
+  color: var(--c-text2);
+  border: 1px solid var(--c-border);
+}
+
+.help-table td {
+  padding: 7px 12px;
+  border: 1px solid var(--c-border);
+  color: var(--c-text2);
+}
+
+.help-table tr:hover td {
+  background: #fafbfc;
+}
+
+/* 目录树 */
+.help-tree {
+  background: #1d2129;
+  color: #a8b1c2;
+  padding: 14px 18px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
+  line-height: 1.7;
+  overflow-x: auto;
+  margin: 8px 0;
+}
+
+/* FAQ 折叠 */
+.help-faq {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.help-faq details {
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.help-faq summary {
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-text2);
+  cursor: pointer;
+  background: #fafbfc;
+  transition: background 0.15s;
+}
+
+.help-faq summary:hover {
+  background: #f0f1f3;
+}
+
+.help-faq details p {
+  padding: 8px 14px 12px;
+  font-size: 12px;
+  color: var(--c-text3);
+  line-height: 1.6;
+}
+
+/* 帮助页滚动条 */
+.tab-page-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+.tab-page-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.tab-page-scroll::-webkit-scrollbar-thumb {
+  background: #d0d5dd;
+  border-radius: 3px;
+}
+.tab-page-scroll::-webkit-scrollbar-thumb:hover {
   background: #b0b8c4;
 }

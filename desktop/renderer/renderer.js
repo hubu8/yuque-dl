@@ -54,6 +54,17 @@ activateBtn.addEventListener('click', async () => {
 // 启动时检查授权
 initLicense()
 
+// ========== Tab 切换 ==========
+document.querySelectorAll('.tab-item').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const target = btn.dataset.tab
+    document.querySelectorAll('.tab-item').forEach(b => b.classList.remove('active'))
+    document.querySelectorAll('.tab-page').forEach(p => p.classList.remove('active'))
+    btn.classList.add('active')
+    document.getElementById('tab' + target.charAt(0).toUpperCase() + target.slice(1)).classList.add('active')
+  })
+})
+
 // ========== 主界面逻辑 ==========
 const form = $('#downloadForm')
 const startBtn = $('#startBtn')
