@@ -250,19 +250,81 @@ async function runDownload(params) {
     sendProgress({ current: downloaded, total, title: item.title })
   }
 
-  // 生成 index.md 目录文件
-  const summaryLines = [`# ${bookName}\n`]
-  for (const [uuid, info] of uuidMap) {
-    if (info.toc.url && info.toc.type?.toLowerCase() === 'doc') {
-      const relPath = info.pathTitleList.map(fixPath)
-      const indent = '  '.repeat(Math.max(0, relPath.length - 1))
-      const fileName = info.toc['child_uuid']
-        ? relPath.join('/') + '/index.md'
-        : relPath.slice(0, -1).concat(relPath.at(-1) + '.md').join('/')
-      summaryLines.push(`${indent}- [${info.toc.title}](./${fileName})`)
+  // 生成 index.md 目录文件（树形结构，与原始 CLI 工具一致）
+  const summary = []
+  function findInTree(tree, id) {
+    if (!id) return null
+    for (const node of tree) {
+      if (node.id === id) return node
+      if (node.children) {
+        const found = findInTree(node.children, id)
+        if (found) return found
+      }
     }
+    return null
   }
-  await writeFile(path.join(bookPath, 'index.md'), summaryLines.join('\n'), 'utf-8')
+
+  uuidMap.forEach((progressItem) => {
+    const toc = progressItem.toc
+    const parentId = toc['parent_uuid']
+    const tocType = (toc.type || '').toLowerCase()
+    const tocText = fixPath(toc.title)
+
+    const node = { text: tocText, id: toc.uuid, level: 1, type: 'link', children: null, link: null }
+
+    if (tocType === ARTICLE_TOC_TYPE.TITLE || toc['child_uuid'] !== '') {
+      node.type = 'title'
+      if (tocType === ARTICLE_CONTENT_TYPE.DOC) {
+        node.link = progressItem.pathTitleList.map(fixPath).join('/') +
+          (toc['child_uuid'] ? '/index.md' : '.md')
+      }
+    } else {
+      node.type = 'link'
+      if (tocType === ARTICLE_TOC_TYPE.LINK) {
+        node.link = toc.url
+      } else if (progressItem.pathTitleList.length > 0) {
+        const parts = progressItem.pathTitleList.map(fixPath)
+        node.link = parts.slice(0, -1).concat(parts.at(-1) + '.md').join('/')
+      }
+    }
+
+    const parentNode = findInTree(summary, parentId)
+    if (parentNode) {
+      if (!parentNode.children) parentNode.children = []
+      node.level = parentNode.level + 1
+      parentNode.children.push(node)
+    } else {
+      node.level = 1
+      summary.push(node)
+    }
+  })
+
+  function genSummaryContent(tree) {
+    let content = ''
+    for (const item of tree) {
+      if (item.type === 'title') {
+        const hashes = '#'.repeat(item.level + 1)
+        if (item.link) {
+          const link = item.link.replace(/\s/g, '%20')
+          content += `\n${hashes} [${item.text}](${link})\n\n`
+        } else {
+          content += `\n${hashes} ${item.text}\n\n`
+        }
+      } else if (item.type === 'link' && item.link) {
+        const link = item.link.replace(/\s/g, '%20')
+        content += `${item.level === 1 ? '\n##' : '-'} [${item.text}](${link})\n`
+      }
+      if (item.children) {
+        content += genSummaryContent(item.children)
+      }
+    }
+    return content
+  }
+
+  let indexMd = `# ${bookName}\n\n`
+  if (info.bookDesc) indexMd += `> ${info.bookDesc}\n\n`
+  indexMd += genSummaryContent(summary)
+  await writeFile(path.join(bookPath, 'index.md'), indexMd, 'utf-8')
 
   const msg = errCount > 0
     ? `完成! 成功 ${downloaded - errCount} 篇, 失败 ${errCount} 篇`
