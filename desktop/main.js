@@ -128,89 +128,27 @@ ipcMain.handle('license-copy-machine-id', async () => {
   return machineId
 })
 
-// ============ 预览服务 ============
-let previewProcess = null
+// ============ 预览服务（主进程内运行） ============
+const previewServer = require('./preview-server')
 let previewPort = null
 
 ipcMain.handle('preview-start', async (_, rootPath) => {
-  // 已有服务在跑
-  if (previewProcess && previewPort) {
+  if (previewPort) {
     return { success: true, port: previewPort }
   }
 
-  // 先停掉旧的
-  if (previewProcess) {
-    previewProcess.kill()
-    previewProcess = null
-    previewPort = null
+  try {
+    const port = await previewServer.start(rootPath, 18888)
+    previewPort = port
+    return { success: true, port }
+  } catch (err) {
+    return { success: false, error: err.message || String(err) }
   }
-
-  return new Promise((resolve) => {
-    let resolved = false
-    const done = (result) => {
-      if (resolved) return
-      resolved = true
-      resolve(result)
-    }
-
-    try {
-      previewProcess = fork(path.join(__dirname, 'preview-server.js'), [], {
-        stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
-        cwd: __dirname
-      })
-    } catch (err) {
-      done({ success: false, error: '启动预览进程失败: ' + err.message })
-      return
-    }
-
-    // 捕获 stderr
-    let stderrData = ''
-    if (previewProcess.stderr) {
-      previewProcess.stderr.on('data', (chunk) => { stderrData += chunk.toString() })
-    }
-
-    // 超时 8 秒
-    const timer = setTimeout(() => {
-      const errMsg = stderrData.trim() || '启动超时，请检查目录是否正确'
-      done({ success: false, error: errMsg })
-      if (previewProcess) { previewProcess.kill(); previewProcess = null }
-    }, 8000)
-
-    previewProcess.send({ action: 'start', rootPath, port: 18888 })
-
-    previewProcess.on('message', (msg) => {
-      if (msg.type === 'started') {
-        clearTimeout(timer)
-        previewPort = msg.data.port
-        done({ success: true, port: previewPort })
-      } else if (msg.type === 'error') {
-        clearTimeout(timer)
-        done({ success: false, error: msg.data })
-      }
-    })
-
-    previewProcess.on('error', (err) => {
-      clearTimeout(timer)
-      done({ success: false, error: err.message })
-    })
-
-    previewProcess.on('exit', (code) => {
-      clearTimeout(timer)
-      previewProcess = null
-      previewPort = null
-      const errMsg = stderrData.trim() || `预览进程异常退出 (code: ${code})`
-      done({ success: false, error: errMsg })
-    })
-  })
 })
 
 ipcMain.handle('preview-stop', async () => {
-  if (previewProcess) {
-    previewProcess.send({ action: 'stop' })
-    previewProcess.kill()
-    previewProcess = null
-    previewPort = null
-  }
+  previewServer.stop()
+  previewPort = null
   return true
 })
 
@@ -230,8 +168,5 @@ ipcMain.handle('select-preview-directory', async () => {
 
 // 退出时清理预览服务
 app.on('before-quit', () => {
-  if (previewProcess) {
-    previewProcess.kill()
-    previewProcess = null
-  }
+  previewServer.stop()
 })

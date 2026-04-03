@@ -173,59 +173,62 @@ buildPage = function(title, body, rootPath, currentPath) {
 }
 
 function startServer(rootPath, port) {
-  if (server) { server.close(); server = null }
+  return new Promise((resolve, reject) => {
+    if (server) { server.close(); server = null }
 
-  server = http.createServer((req, res) => {
-    let urlPath = decodeURIComponent(req.url.split('?')[0])
-    if (urlPath === '/') urlPath = '/index.md'
+    server = http.createServer((req, res) => {
+      let urlPath = decodeURIComponent(req.url.split('?')[0])
+      if (urlPath === '/') urlPath = '/index.md'
 
-    const filePath = path.join(rootPath, urlPath)
-    const ext = path.extname(filePath).toLowerCase()
+      const filePath = path.join(rootPath, urlPath)
+      const ext = path.extname(filePath).toLowerCase()
 
-    if (ext === '.md') {
-      try {
-        const md = fs.readFileSync(filePath, 'utf-8')
-        const titleMatch = md.match(/^# (.+)$/m)
-        const title = titleMatch ? titleMatch[1] : path.basename(filePath, '.md')
-        const body = renderMarkdown(md)
-        const html = buildPage(title, body, rootPath, urlPath)
-        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
-        res.end(html)
-      } catch {
-        res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' })
-        res.end(buildPage('404', '<h1>页面未找到</h1><p>请检查文件路径是否正确</p>', rootPath, ''))
+      if (ext === '.md') {
+        try {
+          const md = fs.readFileSync(filePath, 'utf-8')
+          const titleMatch = md.match(/^# (.+)$/m)
+          const title = titleMatch ? titleMatch[1] : path.basename(filePath, '.md')
+          const body = renderMarkdown(md)
+          const html = buildPage(title, body, rootPath, urlPath)
+          res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
+          res.end(html)
+        } catch {
+          res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' })
+          res.end(buildPage('404', '<h1>页面未找到</h1><p>请检查文件路径是否正确</p>', rootPath, ''))
+        }
+        return
       }
-      return
-    }
 
-    try {
-      const data = fs.readFileSync(filePath)
-      res.writeHead(200, { 'Content-Type': MIME_TYPES[ext] || 'application/octet-stream' })
-      res.end(data)
-    } catch {
-      res.writeHead(404)
-      res.end('Not Found')
-    }
-  })
+      try {
+        const data = fs.readFileSync(filePath)
+        res.writeHead(200, { 'Content-Type': MIME_TYPES[ext] || 'application/octet-stream' })
+        res.end(data)
+      } catch {
+        res.writeHead(404)
+        res.end('Not Found')
+      }
+    })
 
-  server.listen(port, '127.0.0.1', () => {
-    process.send({ type: 'started', data: { port } })
-  })
+    server.listen(port, '127.0.0.1', () => {
+      resolve(port)
+    })
 
-  server.on('error', (err) => {
-    if (err.code === 'EADDRINUSE') {
-      startServer(rootPath, port + 1)
-    } else {
-      process.send({ type: 'error', data: err.message })
-    }
+    server.on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        server = null
+        startServer(rootPath, port + 1).then(resolve).catch(reject)
+      } else {
+        reject(err)
+      }
+    })
   })
 }
 
-process.on('message', (msg) => {
-  if (msg.action === 'start') {
-    startServer(msg.rootPath, msg.port || 18888)
-  } else if (msg.action === 'stop') {
-    if (server) { server.close(); server = null }
-    process.send({ type: 'stopped' })
-  }
-})
+function stopServer() {
+  if (server) { server.close(); server = null }
+}
+
+module.exports = {
+  start: startServer,
+  stop: stopServer
+}
