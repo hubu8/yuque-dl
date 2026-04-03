@@ -50,14 +50,51 @@ function getHardwareFingerprint() {
     parts.push('no-board-serial')
   }
 
-  // MAC 地址
+  // MAC 地址 — 只取物理网卡，排除虚拟网卡
   const nets = os.networkInterfaces()
+
+  // 已知虚拟网卡 MAC 前缀 (OUI)
+  const virtualMacPrefixes = [
+    '00:05:69', // VMware
+    '00:0c:29', // VMware
+    '00:1c:14', // VMware
+    '00:50:56', // VMware
+    '08:00:27', // VirtualBox
+    '0a:00:27', // VirtualBox
+    '00:15:5d', // Hyper-V
+    '00:03:ff', // Microsoft Virtual
+    '7c:1e:52', // Docker
+    '02:42:ac', // Docker
+    'ea:63:e5', // WSL
+  ]
+
+  // 虚拟网卡名称关键词
+  const virtualNameKeywords = [
+    'vmware', 'vmnet', 'virtualbox', 'vbox',
+    'hyper-v', 'vethernet', 'docker', 'br-',
+    'veth', 'virbr', 'wsl', 'loopback',
+    'vpn', 'tap', 'tun', 'zerotier',
+    'hamachi', 'npcap', 'winpcap'
+  ]
+
+  function isVirtualNic(name, mac) {
+    const lowerName = name.toLowerCase()
+    if (virtualNameKeywords.some(kw => lowerName.includes(kw))) return true
+    const macPrefix = mac.substring(0, 8).toLowerCase()
+    if (virtualMacPrefixes.includes(macPrefix)) return true
+    // 本地管理位 MAC（第一字节第二位为1）通常是虚拟/随机生成的
+    const firstByte = parseInt(mac.substring(0, 2), 16)
+    if (firstByte & 0x02) return true
+    return false
+  }
+
   for (const name of Object.keys(nets)) {
     for (const net of nets[name]) {
-      if (!net.internal && net.mac && net.mac !== '00:00:00:00:00:00') {
-        parts.push(net.mac)
-        return parts.join('|')
-      }
+      if (net.internal) continue
+      if (!net.mac || net.mac === '00:00:00:00:00:00') continue
+      if (isVirtualNic(name, net.mac)) continue
+      parts.push(net.mac)
+      return parts.join('|')
     }
   }
   parts.push('no-mac')
