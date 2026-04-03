@@ -8,8 +8,8 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- 授权激活遮罩 -->
-  <div id="licenseOverlay" class="license-overlay">
+  <!-- 授权激活遮罩（默认隐藏，未授权时由 JS 显示） -->
+  <div id="licenseOverlay" class="license-overlay" style="display:none;">
     <div class="license-card">
       <h2>🔑 软件激活</h2>
       <p class="license-desc">首次使用需要激活授权，请将机器码发送给管理员获取授权码</p>
@@ -33,7 +33,7 @@
     </div>
   </div>
 
-  <div class="app" id="mainApp" style="display:none;">
+  <div class="app" id="mainApp">
     <!-- Tab 导航 -->
     <div class="tab-bar">
       <button class="tab-item active" data-tab="download">📥 下载</button>

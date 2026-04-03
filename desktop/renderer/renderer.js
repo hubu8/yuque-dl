@@ -13,12 +13,8 @@ async function initLicense() {
   const status = await window.yuqueAPI.licenseCheck()
   machineIdInput.value = status.machineId
 
-  if (status.activated) {
-    licenseOverlay.style.display = 'none'
-    mainApp.style.display = 'flex'
-  } else {
+  if (!status.activated) {
     licenseOverlay.style.display = 'flex'
-    mainApp.style.display = 'none'
   }
 }
 
@@ -44,7 +40,6 @@ activateBtn.addEventListener('click', async () => {
 
   if (result.success) {
     licenseOverlay.style.display = 'none'
-    mainApp.style.display = 'flex'
   } else {
     licenseError.textContent = result.error
     licenseError.style.display = 'block'
