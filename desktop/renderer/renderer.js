@@ -29,7 +29,7 @@ async function initLicense() {
   } else {
     // 授权有效
     const expireText = status.expireText || '永久有效'
-    licenseStatusEl.textContent = `✅ ${expireText}`
+    licenseStatusEl.textContent = `✅ 到期时间： ${expireText}`
     licenseStatusEl.className = 'license-status'
   }
 }
