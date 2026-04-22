@@ -135,15 +135,23 @@ ipcMain.handle('license-copy-machine-id', async () => {
 // ============ 预览服务（主进程内运行） ============
 const previewServer = require('./preview-server')
 let previewPort = null
+let previewRootPath = null
 
 ipcMain.handle('preview-start', async (_, rootPath) => {
-  if (previewPort) {
+  // 如果目录变了，自动重启服务
+  if (previewPort && previewRootPath === rootPath) {
     return { success: true, port: previewPort }
+  }
+  if (previewPort) {
+    previewServer.stop()
+    previewPort = null
+    previewRootPath = null
   }
 
   try {
     const port = await previewServer.start(rootPath, 18888)
     previewPort = port
+    previewRootPath = rootPath
     return { success: true, port }
   } catch (err) {
     return { success: false, error: err.message || String(err) }
@@ -153,6 +161,7 @@ ipcMain.handle('preview-start', async (_, rootPath) => {
 ipcMain.handle('preview-stop', async () => {
   previewServer.stop()
   previewPort = null
+  previewRootPath = null
   return true
 })
 
@@ -176,7 +185,11 @@ app.on('before-quit', () => {
 })
 
 // ============ Markdown 格式转换 (PDF / Word) ============
-const { marked } = require('marked')
+const { Marked } = require('marked')
+const os = require('os')
+
+// 使用独立 marked 实例，避免与 preview-server 的全局配置冲突
+const convertMarked = new Marked()
 
 let convertCancelled = false
 
@@ -211,7 +224,7 @@ function getAllMdFiles(dir, baseDir) {
 // 将单个 md 文件转为 Word (.docx)
 async function convertMdToWord(mdFilePath, wordFilePath) {
   const mdContent = fs.readFileSync(mdFilePath, 'utf-8')
-  const htmlBody = marked.parse(mdContent)
+  const htmlBody = convertMarked.parse(mdContent)
 
   // 生成 Word 可识别的 HTML 文档 (MHTML 格式)
   const wordHtml = `<!DOCTYPE html>
@@ -338,12 +351,19 @@ class PdfWindowPool {
 }
 
 // 将单个 md 文件转为 PDF（使用池中的窗口）
+// 临时文件目录
+const TEMP_DIR = path.join(os.tmpdir(), 'yuque-dl-convert')
+
 async function convertMdToPdf(mdFilePath, pdfFilePath, pool) {
   const mdContent = fs.readFileSync(mdFilePath, 'utf-8')
-  const htmlBody = marked.parse(mdContent)
+  const htmlBody = convertMarked.parse(mdContent)
   const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${PDF_STYLE}</style></head><body>${htmlBody}</body></html>`
 
   fs.mkdirSync(path.dirname(pdfFilePath), { recursive: true })
+  // 写入临时 HTML 文件，避免 data URL 长度限制
+  fs.mkdirSync(TEMP_DIR, { recursive: true })
+  const tempFile = path.join(TEMP_DIR, `pdf_${Date.now()}_${Math.random().toString(36).slice(2)}.html`)
+  fs.writeFileSync(tempFile, htmlContent, 'utf-8')
 
   const win = await pool.acquire()
   try {
@@ -352,7 +372,7 @@ async function convertMdToPdf(mdFilePath, pdfFilePath, pool) {
       const onFail = (_, code, desc) => { win.webContents.removeListener('did-finish-load', onLoad); reject(new Error(`加载失败: ${desc}`)) }
       win.webContents.once('did-finish-load', onLoad)
       win.webContents.once('did-fail-load', onFail)
-      win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(htmlContent))
+      win.loadFile(tempFile)
     })
     const pdfBuffer = await win.webContents.printToPDF({
       printBackground: true,
@@ -362,6 +382,8 @@ async function convertMdToPdf(mdFilePath, pdfFilePath, pool) {
     fs.writeFileSync(pdfFilePath, pdfBuffer)
   } finally {
     pool.release(win)
+    // 清理临时文件
+    try { fs.unlinkSync(tempFile) } catch {}
   }
 }
 

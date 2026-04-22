@@ -316,6 +316,10 @@ const DURATION_LABELS = {
   '1y': '1 年', '3y': '3 年', 'permanent': '永久'
 }
 
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+}
+
 // 启动时加载历史记录
 fetch('/api/records').then(r => r.json()).then(records => {
   history = records.map(r => ({
@@ -413,11 +417,11 @@ function renderHistory() {
   section.style.display = 'block'
   list.innerHTML = history.map(h =>
     '<div class="history-item">' +
-    '<span class="hi-machine">' + h.machineId + '</span> ' +
-    '<span class="hi-dur">' + (h.durationLabel || DURATION_LABELS[h.duration] || h.duration) + '</span> ' +
-    '<span class="hi-expire">' + (h.expireText || '') + '</span> ' +
-    (h.remark ? '<span class="hi-remark">' + h.remark + '</span> ' : '') +
-    '<span class="hi-time">' + h.time + '</span>' +
+    '<span class="hi-machine">' + escHtml(h.machineId) + '</span> ' +
+    '<span class="hi-dur">' + escHtml(h.durationLabel || DURATION_LABELS[h.duration] || h.duration) + '</span> ' +
+    '<span class="hi-expire">' + escHtml(h.expireText || '') + '</span> ' +
+    (h.remark ? '<span class="hi-remark">' + escHtml(h.remark) + '</span> ' : '') +
+    '<span class="hi-time">' + escHtml(h.time) + '</span>' +
     '</div>'
   ).join('')
 }
