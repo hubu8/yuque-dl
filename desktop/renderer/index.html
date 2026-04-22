@@ -295,6 +295,13 @@
               <div class="step-desc">切换到「🌐 预览」页，选择下载好的知识库文件夹，点击「启动预览」即可在浏览器中阅读</div>
             </div>
           </div>
+          <div class="help-step">
+            <span class="step-num">5</span>
+            <div>
+              <div class="step-title">格式转换（可选）</div>
+              <div class="step-desc">切换到「🔄 转换」页，选择已下载的知识库目录，将 Markdown 批量转为 PDF 或 Word</div>
+            </div>
+          </div>
         </div>
 
         <h2>下载私有知识库</h2>
@@ -319,6 +326,17 @@
         </ol>
         <div class="help-tip">💡 预览服务运行在本地 18888 端口，仅本机可访问，不会暴露到网络。</div>
 
+        <h2>格式转换</h2>
+        <p>将下载的 Markdown 文件批量转换为 PDF 或 Word 格式：</p>
+        <ol class="help-list">
+          <li>切换到「🔄 转换」标签页</li>
+          <li>选择输出格式：<strong>PDF</strong>（排版精美，适合分享）或 <strong>Word</strong>（.doc 格式，可二次编辑）</li>
+          <li>选择已下载的知识库目录（包含 .md 文件的文件夹）</li>
+          <li>调整并发数：PDF 建议 2~4（需要渲染窗口，占用较多内存），Word 可设更高如 5~10（纯文件写入）</li>
+          <li>点击「开始转换」，等待完成</li>
+        </ol>
+        <div class="help-tip">💡 转换结果保存在知识库目录同级的 <code>xxx_pdf</code> 或 <code>xxx_word</code> 文件夹中，目录结构与原始文件保持一致。</div>
+
         <h2>高级选项说明</h2>
         <table class="help-table">
           <thead><tr><th>选项</th><th>说明</th></tr></thead>
@@ -328,20 +346,39 @@
             <tr><td>生成文档 TOC</td><td>在每篇文档中生成目录索引</td></tr>
             <tr><td>增量下载</td><td>只下载新增或更新的文档，适合重复下载</td></tr>
             <tr><td>视频链接转 video 标签</td><td>将视频链接转为 HTML 标签，方便本地播放</td></tr>
-            <tr><td>隐藏页脚信息</td><td>不在文档末尾添加更新时间和原文链接</td></tr>
+            <tr><td>隐藏页脚信息</td><td>不在文档末尾添加更新时间和原文链接（默认开启）</td></tr>
           </tbody>
         </table>
 
         <h2>下载结果</h2>
         <pre class="help-tree">下载目录/
-└── 知识库名称/
-    ├── index.md          ← 目录索引
-    ├── 文档标题1.md
-    ├── 文档标题2.md
-    ├── 子目录/
-    │   └── 文档标题3.md
+├── 知识库名称/           ← Markdown 源文件
+│   ├── index.md          ← 目录索引
+│   ├── 文档标题1.md
+│   ├── 文档标题2.md
+│   ├── 子目录/
+│   │   └── 文档标题3.md
+│   └── ...
+├── 知识库名称_pdf/       ← PDF 转换结果（转换后生成）
+│   ├── 文档标题1.pdf
+│   └── ...
+└── 知识库名称_word/      ← Word 转换结果（转换后生成）
+    ├── 文档标题1.doc
     └── ...</pre>
         <p>所有文档均为标准 Markdown 格式，可用任意编辑器打开。</p>
+
+        <h2>授权说明</h2>
+        <p>软件采用授权码激活机制，Tab 栏右侧会显示当前授权状态：</p>
+        <table class="help-table">
+          <thead><tr><th>状态</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>✅ 永久有效</td><td>永久授权，无需续期</td></tr>
+            <tr><td>✅ 2025/04/22 10:30</td><td>有期限授权，显示到期时间</td></tr>
+            <tr><td>⚠️ 已过期</td><td>授权已过期，需要联系管理员获取新授权码</td></tr>
+            <tr><td>❌ 未激活</td><td>尚未激活，请将机器码发给管理员获取授权码</td></tr>
+          </tbody>
+        </table>
+        <div class="help-tip">💡 授权码与硬件绑定（CPU + 主板 + 网卡），更换电脑需重新获取授权码。授权过期后会自动弹出激活窗口。</div>
 
         <h2>常见问题</h2>
         <div class="help-faq">
@@ -360,6 +397,18 @@
           <details>
             <summary>预览启动失败</summary>
             <p>请确认选择的是包含 .md 文件的知识库目录。如果端口 18888 被占用，服务会自动尝试下一个端口。</p>
+          </details>
+          <details>
+            <summary>转换后的 PDF 样式异常</summary>
+            <p>PDF 转换依赖 Electron 内置浏览器渲染，部分复杂排版可能与原文略有差异。建议降低并发数（设为 1~2）可提高渲染稳定性。</p>
+          </details>
+          <details>
+            <summary>Word 文件用 WPS 打开格式不正确</summary>
+            <p>生成的 .doc 文件采用 HTML 格式，推荐使用 Microsoft Word 打开效果最佳。WPS 对部分样式的兼容性可能有差异。</p>
+          </details>
+          <details>
+            <summary>授权过期了怎么办</summary>
+            <p>授权过期后会自动弹出激活窗口，请将机器码发送给管理员，获取新的授权码后重新输入激活即可。</p>
           </details>
           <details>
             <summary>换电脑后需要重新激活</summary>
