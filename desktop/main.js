@@ -13,6 +13,7 @@ function createWindow() {
     minWidth: 600,
     minHeight: 500,
     title: '语雀知识库下载器',
+    icon: path.join(__dirname, 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
