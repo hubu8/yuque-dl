@@ -101,12 +101,16 @@ function getHardwareFingerprint() {
 
 /**
  * 生成机器码 (16位 hex，4位一组)
+ * 结果会缓存，避免重复调用 execSync 获取硬件信息
  */
+let _cachedMachineId = null
 function generateMachineId() {
+  if (_cachedMachineId) return _cachedMachineId
   const fingerprint = getHardwareFingerprint()
   const hash = crypto.createHash('sha256').update(fingerprint).digest('hex')
   const code = hash.substring(0, 16).toUpperCase()
-  return code.match(/.{4}/g).join('-')
+  _cachedMachineId = code.match(/.{4}/g).join('-')
+  return _cachedMachineId
 }
 
 /**

@@ -63,7 +63,26 @@ ipcMain.handle('start-download', async (_, params) => {
     downloadProcess = null
   }
 
+  // 30 分钟超时保护，避免 Promise 永久挂起
+  const DOWNLOAD_TIMEOUT = 30 * 60 * 1000
+  let resolved = false
+
   return new Promise((resolve) => {
+    const safeResolve = (value) => {
+      if (resolved) return
+      resolved = true
+      clearTimeout(timer)
+      resolve(value)
+    }
+
+    const timer = setTimeout(() => {
+      if (downloadProcess) {
+        downloadProcess.kill()
+        downloadProcess = null
+      }
+      safeResolve({ success: false, error: '下载超时（30分钟），请检查网络后重试' })
+    }, DOWNLOAD_TIMEOUT)
+
     downloadProcess = fork(path.join(__dirname, 'worker.js'), [], {
       stdio: ['pipe', 'pipe', 'pipe', 'ipc']
     })
@@ -76,20 +95,20 @@ ipcMain.handle('start-download', async (_, params) => {
       } else if (msg.type === 'log') {
         mainWindow.webContents.send('download-log', msg.data)
       } else if (msg.type === 'done') {
-        resolve({ success: true, path: msg.data })
+        safeResolve({ success: true, path: msg.data })
       } else if (msg.type === 'error') {
-        resolve({ success: false, error: msg.data })
+        safeResolve({ success: false, error: msg.data })
       }
     })
 
     downloadProcess.on('error', (err) => {
-      resolve({ success: false, error: err.message })
+      safeResolve({ success: false, error: err.message })
     })
 
     downloadProcess.on('exit', (code) => {
       downloadProcess = null
       if (code !== 0 && code !== null) {
-        resolve({ success: false, error: `进程异常退出 (code: ${code})` })
+        safeResolve({ success: false, error: `进程异常退出 (code: ${code})` })
       }
     })
   })
