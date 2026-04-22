@@ -18,6 +18,36 @@ const PRIVATE_KEY = fs.readFileSync(
 )
 
 const PORT = 19999
+const RECORDS_FILE = path.join(__dirname, 'license-records.json')
+
+const DURATION_LABELS = {
+  '30m': '30 分钟', '1d': '1 天',
+  '1y': '1 年', '3y': '3 年', 'permanent': '永久'
+}
+
+// 追加授权记录到文件
+function appendRecord(record) {
+  let records = []
+  if (fs.existsSync(RECORDS_FILE)) {
+    try {
+      records = JSON.parse(fs.readFileSync(RECORDS_FILE, 'utf-8'))
+    } catch {
+      records = []
+    }
+  }
+  records.push(record)
+  fs.writeFileSync(RECORDS_FILE, JSON.stringify(records, null, 2), 'utf-8')
+}
+
+// 读取历史记录
+function loadRecords() {
+  if (!fs.existsSync(RECORDS_FILE)) return []
+  try {
+    return JSON.parse(fs.readFileSync(RECORDS_FILE, 'utf-8'))
+  } catch {
+    return []
+  }
+}
 
 // 生成授权码: 签名内容 = machineId|expireAt
 function generateLicense(machineId, expireAt) {
@@ -273,12 +303,24 @@ const HTML_PAGE = `<!DOCTYPE html>
 
 <script>
 let selectedDuration = 'permanent'
-const history = []
+let history = []
 
 const DURATION_LABELS = {
   '30m': '30 分钟', '1d': '1 天',
   '1y': '1 年', '3y': '3 年', 'permanent': '永久'
 }
+
+// 启动时加载历史记录
+fetch('/api/records').then(r => r.json()).then(records => {
+  history = records.map(r => ({
+    machineId: r.machineId,
+    duration: r.duration,
+    durationLabel: r.durationLabel,
+    expireText: r.expireText,
+    time: new Date(r.createdAt).toLocaleString('zh-CN')
+  })).reverse()
+  renderHistory()
+}).catch(() => {})
 
 function formatMachineId(input) {
   let v = input.value.replace(/[^A-Fa-f0-9]/g, '').toUpperCase().slice(0, 16)
@@ -332,8 +374,14 @@ async function generate() {
       '机器码: ' + machineId + ' | 时长: ' + DURATION_LABELS[selectedDuration] + ' | ' + expireText
     resultSection.classList.add('show')
 
-    // 添加历史记录
-    history.unshift({ machineId, duration: selectedDuration, time: new Date().toLocaleTimeString() })
+    // 添加历史记录（前端同步更新）
+    history.unshift({
+      machineId,
+      duration: selectedDuration,
+      durationLabel: DURATION_LABELS[selectedDuration],
+      expireText: expireText,
+      time: new Date().toLocaleString('zh-CN')
+    })
     renderHistory()
   } catch (err) {
     errorMsg.textContent = '请求失败: ' + err.message
@@ -358,7 +406,8 @@ function renderHistory() {
   list.innerHTML = history.map(h =>
     '<div class="history-item">' +
     '<span class="hi-machine">' + h.machineId + '</span> ' +
-    '<span class="hi-dur">' + DURATION_LABELS[h.duration] + '</span> ' +
+    '<span class="hi-dur">' + (h.durationLabel || DURATION_LABELS[h.duration] || h.duration) + '</span> ' +
+    '<span class="hi-expire">' + (h.expireText || '') + '</span> ' +
     '<span class="hi-time">' + h.time + '</span>' +
     '</div>'
   ).join('')
@@ -383,6 +432,19 @@ const server = http.createServer((req, res) => {
         const { machineId, duration } = JSON.parse(body)
         const expireAt = calcExpireAt(duration)
         const licenseKey = generateLicense(machineId, expireAt)
+
+        // 追加记录到文件
+        const formatted = machineId.match(/.{4}/g).join('-')
+        appendRecord({
+          machineId: formatted,
+          duration,
+          durationLabel: DURATION_LABELS[duration] || duration,
+          expireAt,
+          expireText: expireAt === 0 ? '永久有效' : new Date(expireAt).toLocaleString('zh-CN'),
+          licenseKey,
+          createdAt: new Date().toISOString()
+        })
+
         res.writeHead(200, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify({ success: true, licenseKey, expireAt }))
       } catch (err) {
@@ -390,6 +452,14 @@ const server = http.createServer((req, res) => {
         res.end(JSON.stringify({ success: false, error: err.message }))
       }
     })
+    return
+  }
+
+  // 查询历史记录接口
+  if (req.method === 'GET' && req.url === '/api/records') {
+    const records = loadRecords()
+    res.writeHead(200, { 'Content-Type': 'application/json' })
+    res.end(JSON.stringify(records))
     return
   }
 
