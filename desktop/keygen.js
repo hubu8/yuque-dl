@@ -239,11 +239,28 @@ const HTML_PAGE = `<!DOCTYPE html>
     margin-bottom: 6px;
     font-size: 12px;
     color: #4e5969;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
   }
   .history-item .hi-machine { font-family: Consolas, monospace; font-weight: 600; color: #1d2129; }
   .history-item .hi-dur { color: #4a9eff; }
   .history-item .hi-remark { color: #f59e0b; font-style: italic; }
   .history-item .hi-time { color: #86909c; }
+  .history-item .hi-copy {
+    margin-left: auto;
+    padding: 2px 8px;
+    font-size: 11px;
+    background: #4a9eff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .history-item .hi-copy:hover { background: #3b8de8; }
 </style>
 </head>
 <body>
@@ -328,6 +345,7 @@ fetch('/api/records').then(r => r.json()).then(records => {
     durationLabel: r.durationLabel,
     expireText: r.expireText,
     remark: r.remark || '',
+    licenseKey: r.licenseKey || '',
     time: new Date(r.createdAt).toLocaleString('zh-CN')
   })).reverse()
   renderHistory()
@@ -392,6 +410,7 @@ async function generate() {
       durationLabel: DURATION_LABELS[selectedDuration],
       expireText: expireText,
       remark: document.getElementById('remark').value.trim(),
+      licenseKey: data.licenseKey,
       time: new Date().toLocaleString('zh-CN')
     })
     renderHistory()
@@ -415,15 +434,25 @@ function renderHistory() {
   const list = document.getElementById('historyList')
   if (history.length === 0) { section.style.display = 'none'; return }
   section.style.display = 'block'
-  list.innerHTML = history.map(h =>
+  list.innerHTML = history.map((h, i) =>
     '<div class="history-item">' +
     '<span class="hi-machine">' + escHtml(h.machineId) + '</span> ' +
     '<span class="hi-dur">' + escHtml(h.durationLabel || DURATION_LABELS[h.duration] || h.duration) + '</span> ' +
     '<span class="hi-expire">' + escHtml(h.expireText || '') + '</span> ' +
     (h.remark ? '<span class="hi-remark">' + escHtml(h.remark) + '</span> ' : '') +
     '<span class="hi-time">' + escHtml(h.time) + '</span>' +
+    (h.licenseKey ? '<button class="hi-copy" onclick="copyHistoryKey(' + i + ', this)">复制授权码</button>' : '') +
     '</div>'
   ).join('')
+}
+
+function copyHistoryKey(index, btn) {
+  const key = history[index]?.licenseKey
+  if (!key) return
+  navigator.clipboard.writeText(key).then(() => {
+    btn.textContent = '已复制!'
+    setTimeout(() => { btn.textContent = '复制授权码' }, 1500)
+  })
 }
 </script>
 </body>
