@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain, dialog, shell, clipboard } = require('electron')
 const path = require('path')
+const fs = require('fs')
 const { fork } = require('child_process')
 const license = require('./license')
 
@@ -113,10 +114,13 @@ ipcMain.handle('license-check', async () => {
 // 激活授权码
 ipcMain.handle('license-activate', async (_, licenseKey) => {
   const machineId = license.generateMachineId()
-  const valid = license.validateLicense(machineId, licenseKey)
-  if (valid) {
-    license.saveLicense(app.getPath('userData'), machineId, licenseKey)
-    return { success: true }
+  const result = license.validateLicense(machineId, licenseKey)
+  if (result.valid) {
+    if (result.expired) {
+      return { success: false, error: `授权码已过期（${license.checkActivation(app.getPath('userData')).expireText || '已过期'}）` }
+    }
+    license.saveLicense(app.getPath('userData'), machineId, licenseKey, result.expireAt)
+    return { success: true, expireText: result.expireAt === 0 ? '永久有效' : new Date(result.expireAt).toLocaleString('zh-CN') }
   }
   return { success: false, error: '授权码无效，请检查后重试' }
 })
@@ -169,4 +173,300 @@ ipcMain.handle('select-preview-directory', async () => {
 // 退出时清理预览服务
 app.on('before-quit', () => {
   previewServer.stop()
+})
+
+// ============ Markdown 格式转换 (PDF / Word) ============
+const { marked } = require('marked')
+
+let convertCancelled = false
+
+// 选择转换目录
+ipcMain.handle('select-convert-directory', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openDirectory'],
+    title: '选择已下载的知识库目录'
+  })
+  if (result.canceled) return null
+  return result.filePaths[0]
+})
+
+// 递归获取所有 .md 文件
+function getAllMdFiles(dir, baseDir) {
+  const files = []
+  const entries = fs.readdirSync(dir, { withFileTypes: true })
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name)
+    if (entry.isDirectory()) {
+      files.push(...getAllMdFiles(fullPath, baseDir))
+    } else if (entry.isFile() && entry.name.endsWith('.md')) {
+      files.push({
+        fullPath,
+        relativePath: path.relative(baseDir, fullPath)
+      })
+    }
+  }
+  return files
+}
+
+// 将单个 md 文件转为 Word (.docx)
+async function convertMdToWord(mdFilePath, wordFilePath) {
+  const mdContent = fs.readFileSync(mdFilePath, 'utf-8')
+  const htmlBody = marked.parse(mdContent)
+
+  // 生成 Word 可识别的 HTML 文档 (MHTML 格式)
+  const wordHtml = `<!DOCTYPE html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+      xmlns:w="urn:schemas-microsoft-com:office:word"
+      xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<!--[if gte mso 9]>
+<xml>
+  <w:WordDocument>
+    <w:View>Print</w:View>
+    <w:Zoom>100</w:Zoom>
+    <w:DoNotOptimizeForBrowser/>
+  </w:WordDocument>
+</xml>
+<![endif]-->
+<style>
+  body { font-family: "Microsoft YaHei", "SimSun", sans-serif; padding: 20px; line-height: 1.8; color: #333; }
+  h1,h2,h3,h4,h5,h6 { margin-top: 1.2em; margin-bottom: 0.6em; color: #1a1a1a; }
+  h1 { font-size: 22pt; border-bottom: 1px solid #eee; padding-bottom: 6px; }
+  h2 { font-size: 16pt; }
+  h3 { font-size: 13pt; }
+  p { margin: 0.8em 0; }
+  code { background: #f5f5f5; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; font-family: Consolas, monospace; }
+  pre { background: #f5f5f5; padding: 12px; border-radius: 6px; overflow-x: auto; }
+  pre code { background: none; padding: 0; }
+  blockquote { border-left: 4px solid #ddd; margin: 1em 0; padding: 0.5em 1em; color: #666; background: #f9f9f9; }
+  table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+  th, td { border: 1px solid #ddd; padding: 6px 10px; text-align: left; }
+  th { background: #f5f5f5; font-weight: bold; }
+  img { max-width: 100%; height: auto; }
+  a { color: #0366d6; text-decoration: none; }
+  ul, ol { padding-left: 2em; }
+  li { margin: 0.3em 0; }
+  hr { border: none; border-top: 1px solid #eee; margin: 2em 0; }
+</style>
+</head>
+<body>${htmlBody}</body>
+</html>`
+
+  // 确保输出目录存在
+  fs.mkdirSync(path.dirname(wordFilePath), { recursive: true })
+  fs.writeFileSync(wordFilePath, wordHtml, 'utf-8')
+}
+
+// PDF 样式模板
+const PDF_STYLE = `
+  body { font-family: -apple-system, "Microsoft YaHei", sans-serif; padding: 40px; line-height: 1.8; color: #333; max-width: 800px; margin: 0 auto; }
+  h1,h2,h3,h4,h5,h6 { margin-top: 1.2em; margin-bottom: 0.6em; color: #1a1a1a; }
+  h1 { font-size: 24px; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+  h2 { font-size: 20px; }
+  h3 { font-size: 16px; }
+  p { margin: 0.8em 0; }
+  code { background: #f5f5f5; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; }
+  pre { background: #f5f5f5; padding: 16px; border-radius: 6px; overflow-x: auto; }
+  pre code { background: none; padding: 0; }
+  blockquote { border-left: 4px solid #ddd; margin: 1em 0; padding: 0.5em 1em; color: #666; background: #f9f9f9; }
+  table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+  th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; }
+  th { background: #f5f5f5; font-weight: 600; }
+  img { max-width: 100%; height: auto; }
+  a { color: #0366d6; text-decoration: none; }
+  ul, ol { padding-left: 2em; }
+  li { margin: 0.3em 0; }
+  hr { border: none; border-top: 1px solid #eee; margin: 2em 0; }
+`
+
+// 并发数
+const PDF_CONCURRENCY = 3
+const WORD_CONCURRENCY = 8
+
+// BrowserWindow 对象池
+class PdfWindowPool {
+  constructor(size) {
+    this.size = size
+    this.pool = []     // 空闲窗口
+    this.waiting = []  // 等待队列
+  }
+
+  init() {
+    for (let i = 0; i < this.size; i++) {
+      this.pool.push(this._createWindow())
+    }
+  }
+
+  _createWindow() {
+    const win = new BrowserWindow({
+      show: false,
+      width: 800,
+      height: 600,
+      webPreferences: { offscreen: true }
+    })
+    win.webContents.setMaxListeners(20)
+    return win
+  }
+
+  acquire() {
+    if (this.pool.length > 0) {
+      return Promise.resolve(this.pool.pop())
+    }
+    return new Promise(resolve => {
+      this.waiting.push(resolve)
+    })
+  }
+
+  release(win) {
+    if (this.waiting.length > 0) {
+      const resolve = this.waiting.shift()
+      resolve(win)
+    } else {
+      this.pool.push(win)
+    }
+  }
+
+  destroyAll() {
+    for (const win of this.pool) {
+      if (!win.isDestroyed()) win.destroy()
+    }
+    this.pool = []
+    this.waiting = []
+  }
+}
+
+// 将单个 md 文件转为 PDF（使用池中的窗口）
+async function convertMdToPdf(mdFilePath, pdfFilePath, pool) {
+  const mdContent = fs.readFileSync(mdFilePath, 'utf-8')
+  const htmlBody = marked.parse(mdContent)
+  const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${PDF_STYLE}</style></head><body>${htmlBody}</body></html>`
+
+  fs.mkdirSync(path.dirname(pdfFilePath), { recursive: true })
+
+  const win = await pool.acquire()
+  try {
+    await new Promise((resolve, reject) => {
+      const onLoad = () => { win.webContents.removeListener('did-fail-load', onFail); resolve() }
+      const onFail = (_, code, desc) => { win.webContents.removeListener('did-finish-load', onLoad); reject(new Error(`加载失败: ${desc}`)) }
+      win.webContents.once('did-finish-load', onLoad)
+      win.webContents.once('did-fail-load', onFail)
+      win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(htmlContent))
+    })
+    const pdfBuffer = await win.webContents.printToPDF({
+      printBackground: true,
+      preferCSSPageSize: true,
+      margins: { top: 0.4, bottom: 0.4, left: 0.4, right: 0.4 }
+    })
+    fs.writeFileSync(pdfFilePath, pdfBuffer)
+  } finally {
+    pool.release(win)
+  }
+}
+
+// 并发控制器
+async function runWithConcurrency(tasks, concurrency) {
+  const results = []
+  let index = 0
+
+  async function runNext() {
+    while (index < tasks.length) {
+      const i = index++
+      results[i] = await tasks[i]()
+    }
+  }
+
+  const workers = Array.from({ length: Math.min(concurrency, tasks.length) }, () => runNext())
+  await Promise.all(workers)
+  return results
+}
+
+// 开始转换
+ipcMain.handle('start-convert', async (_, dirPath, format, userConcurrency) => {
+  convertCancelled = false
+  const outputFormat = format || 'pdf'
+  const outputExt = outputFormat === 'word' ? '.doc' : '.pdf'
+  const dirSuffix = outputFormat === 'word' ? '_word' : '_pdf'
+  const concurrency = Math.max(1, Math.min(10, userConcurrency || (outputFormat === 'word' ? WORD_CONCURRENCY : PDF_CONCURRENCY)))
+
+  let pool = null
+
+  try {
+    // 获取所有 md 文件
+    const mdFiles = getAllMdFiles(dirPath, dirPath)
+    if (mdFiles.length === 0) {
+      return { success: false, error: '未找到 Markdown 文件' }
+    }
+
+    // 生成输出目录: 同级目录下创建 xxx_pdf 或 xxx_word 文件夹
+    const dirName = path.basename(dirPath)
+    const parentDir = path.dirname(dirPath)
+    const outputDir = path.join(parentDir, dirName + dirSuffix)
+    fs.mkdirSync(outputDir, { recursive: true })
+
+    mainWindow.webContents.send('convert-log', `找到 ${mdFiles.length} 个 Markdown 文件`)
+    mainWindow.webContents.send('convert-log', `输出格式: ${outputFormat.toUpperCase()}`)
+    mainWindow.webContents.send('convert-log', `并发数: ${concurrency}`)
+    mainWindow.webContents.send('convert-log', `输出目录: ${outputDir}`)
+
+    // PDF 模式: 初始化窗口池
+    if (outputFormat === 'pdf') {
+      pool = new PdfWindowPool(concurrency)
+      pool.init()
+    }
+
+    let successCount = 0
+    let failCount = 0
+    let doneCount = 0
+
+    // 构建任务列表
+    const tasks = mdFiles.map((mdFile, i) => async () => {
+      if (convertCancelled) return
+
+      const outRelPath = mdFile.relativePath.replace(/\.md$/i, outputExt)
+      const outFilePath = path.join(outputDir, outRelPath)
+
+      try {
+        if (outputFormat === 'word') {
+          await convertMdToWord(mdFile.fullPath, outFilePath)
+        } else {
+          await convertMdToPdf(mdFile.fullPath, outFilePath, pool)
+        }
+        successCount++
+        mainWindow.webContents.send('convert-log', `✓ ${mdFile.relativePath}`)
+      } catch (err) {
+        failCount++
+        mainWindow.webContents.send('convert-log', `✗ ${mdFile.relativePath}: ${err.message}`)
+      }
+
+      doneCount++
+      mainWindow.webContents.send('convert-progress', {
+        current: doneCount,
+        total: mdFiles.length,
+        title: mdFile.relativePath
+      })
+    })
+
+    // 并发执行
+    await runWithConcurrency(tasks, concurrency)
+
+    if (convertCancelled) {
+      mainWindow.webContents.send('convert-log', '✗ 转换已取消')
+      return { success: false, error: '用户取消' }
+    }
+
+    mainWindow.webContents.send('convert-log', `转换完成: 成功 ${successCount}, 失败 ${failCount}`)
+    return { success: true, path: outputDir, successCount, failCount }
+  } catch (err) {
+    return { success: false, error: err.message || String(err) }
+  } finally {
+    // 清理窗口池
+    if (pool) pool.destroyAll()
+  }
+})
+
+ipcMain.handle('cancel-convert', async () => {
+  convertCancelled = true
+  return true
 })

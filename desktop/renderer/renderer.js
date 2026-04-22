@@ -13,8 +13,24 @@ async function initLicense() {
   const status = await window.yuqueAPI.licenseCheck()
   machineIdInput.value = status.machineId
 
-  if (!status.activated) {
+  const licenseStatusEl = $('#licenseStatus')
+
+  if (status.expired) {
+    // 授权已过期
     licenseOverlay.style.display = 'flex'
+    licenseError.textContent = `授权已过期（${status.expireText}），请重新激活`
+    licenseError.style.display = 'block'
+    licenseStatusEl.textContent = '⚠️ 已过期'
+    licenseStatusEl.className = 'license-status license-expired'
+  } else if (!status.activated) {
+    licenseOverlay.style.display = 'flex'
+    licenseStatusEl.textContent = '❌ 未激活'
+    licenseStatusEl.className = 'license-status license-inactive'
+  } else {
+    // 授权有效
+    const expireText = status.expireText || '永久有效'
+    licenseStatusEl.textContent = `✅ ${expireText}`
+    licenseStatusEl.className = 'license-status'
   }
 }
 
@@ -40,6 +56,10 @@ activateBtn.addEventListener('click', async () => {
 
   if (result.success) {
     licenseOverlay.style.display = 'none'
+    const licenseStatusEl = $('#licenseStatus')
+    const expireText = result.expireText || '永久有效'
+    licenseStatusEl.textContent = `✅ ${expireText}`
+    licenseStatusEl.className = 'license-status'
   } else {
     licenseError.textContent = result.error
     licenseError.style.display = 'block'
@@ -269,4 +289,169 @@ previewOpenBtn.addEventListener('click', () => {
 previewLink.addEventListener('click', (e) => {
   e.preventDefault()
   window.yuqueAPI.previewOpen(previewLink.href)
+})
+
+// ========== 转换功能 ==========
+const convertDirInput = $('#convertDir')
+const selectConvertDirBtn = $('#selectConvertDirBtn')
+const openConvertDirBtn = $('#openConvertDirBtn')
+const convertStartBtn = $('#convertStartBtn')
+const convertCancelBtn = $('#convertCancelBtn')
+const convertProgressSection = $('#convertProgressSection')
+const convertProgressText = $('#convertProgressText')
+const convertProgressPercent = $('#convertProgressPercent')
+const convertProgressFill = $('#convertProgressFill')
+const convertLogArea = $('#convertLogArea')
+const clearConvertLogBtn = $('#clearConvertLogBtn')
+const convertResultSection = $('#convertResultSection')
+const convertResultText = $('#convertResultText')
+const openConvertResultBtn = $('#openConvertResultBtn')
+const convertOutputHint = $('#convertOutputHint')
+
+let isConverting = false
+let convertResultPath = ''
+const concurrencySlider = $('#convertConcurrency')
+const concurrencyValueLabel = $('#concurrencyValue')
+
+// 滑块实时更新数字
+concurrencySlider.addEventListener('input', () => {
+  concurrencyValueLabel.textContent = concurrencySlider.value
+})
+
+// 获取当前选中的格式
+function getConvertFormat() {
+  const checked = document.querySelector('input[name="convertFormat"]:checked')
+  return checked ? checked.value : 'pdf'
+}
+
+// 格式切换时更新提示 + 自动调整默认并发数
+document.querySelectorAll('input[name="convertFormat"]').forEach(radio => {
+  radio.addEventListener('change', () => {
+    const format = getConvertFormat()
+    const suffix = format === 'word' ? '_word' : '_pdf'
+    const dir = convertDirInput.value
+    if (dir) {
+      const dirName = dir.split(/[\\/]/).pop()
+      convertOutputHint.textContent = dirName + suffix
+    } else {
+      convertOutputHint.textContent = 'xxx' + suffix
+    }
+    // 切换格式时自动调整推荐并发数
+    const defaultConcurrency = format === 'word' ? 8 : 3
+    concurrencySlider.value = defaultConcurrency
+    concurrencyValueLabel.textContent = defaultConcurrency
+  })
+})
+
+// 选择转换目录
+selectConvertDirBtn.addEventListener('click', async () => {
+  const dir = await window.yuqueAPI.selectConvertDirectory()
+  if (dir) {
+    convertDirInput.value = dir
+    // 更新输出目录提示
+    const dirName = dir.split(/[\\/]/).pop()
+    const suffix = getConvertFormat() === 'word' ? '_word' : '_pdf'
+    convertOutputHint.textContent = dirName + suffix
+  }
+})
+
+// 打开输出目录
+openConvertDirBtn.addEventListener('click', () => {
+  if (convertResultPath) {
+    window.yuqueAPI.openDirectory(convertResultPath)
+  } else if (convertDirInput.value) {
+    const dir = convertDirInput.value
+    const dirName = dir.split(/[\\/]/).pop()
+    const parentDir = dir.substring(0, dir.length - dirName.length)
+    const suffix = getConvertFormat() === 'word' ? '_word' : '_pdf'
+    window.yuqueAPI.openDirectory(parentDir + dirName + suffix)
+  }
+})
+
+// 清空转换日志
+clearConvertLogBtn.addEventListener('click', () => {
+  convertLogArea.innerHTML = ''
+})
+
+// 添加转换日志
+function addConvertLog(msg, type = 'info') {
+  const div = document.createElement('div')
+  div.className = `log-item log-${type}`
+  div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`
+  convertLogArea.appendChild(div)
+  convertLogArea.scrollTop = convertLogArea.scrollHeight
+}
+
+// 设置转换状态
+function setConverting(converting) {
+  isConverting = converting
+  convertStartBtn.disabled = converting
+  convertCancelBtn.disabled = !converting
+  convertStartBtn.textContent = converting ? '转换中...' : '开始转换'
+}
+
+// 开始转换
+convertStartBtn.addEventListener('click', async () => {
+  const dir = convertDirInput.value.trim()
+  if (!dir) {
+    addConvertLog('请先选择知识库目录', 'error')
+    return
+  }
+  if (isConverting) return
+
+  setConverting(true)
+  convertProgressSection.style.display = 'block'
+  convertResultSection.style.display = 'none'
+  convertProgressFill.style.width = '0%'
+  convertProgressText.textContent = '准备中...'
+  convertProgressPercent.textContent = '0%'
+  addConvertLog(`开始转换: ${dir} (${getConvertFormat().toUpperCase()}, 并发${concurrencySlider.value})`, 'info')
+
+  const result = await window.yuqueAPI.startConvert(dir, getConvertFormat(), parseInt(concurrencySlider.value))
+
+  setConverting(false)
+
+  if (result.success) {
+    convertResultPath = result.path
+    convertResultSection.style.display = 'flex'
+    convertResultSection.className = 'result-section'
+    convertResultText.textContent = `✅ 转换完成! 成功 ${result.successCount} 个，失败 ${result.failCount} 个`
+    openConvertResultBtn.style.display = 'inline'
+    addConvertLog('转换完成!', 'success')
+  } else {
+    convertResultSection.style.display = 'flex'
+    convertResultSection.className = 'result-section error'
+    convertResultText.textContent = `❌ ${result.error}`
+    openConvertResultBtn.style.display = 'none'
+    addConvertLog(`错误: ${result.error}`, 'error')
+  }
+})
+
+// 取消转换
+convertCancelBtn.addEventListener('click', async () => {
+  if (!isConverting) return
+  await window.yuqueAPI.cancelConvert()
+  setConverting(false)
+  addConvertLog('已取消转换', 'error')
+})
+
+// 打开转换结果目录
+openConvertResultBtn.addEventListener('click', () => {
+  if (convertResultPath) {
+    window.yuqueAPI.openDirectory(convertResultPath)
+  }
+})
+
+// 监听转换进度
+window.yuqueAPI.onConvertProgress((data) => {
+  const percent = Math.round((data.current / data.total) * 100)
+  convertProgressFill.style.width = `${percent}%`
+  convertProgressText.textContent = `${data.title} (${data.current}/${data.total})`
+  convertProgressPercent.textContent = `${percent}%`
+})
+
+// 监听转换日志
+window.yuqueAPI.onConvertLog((msg) => {
+  const type = msg.startsWith('✓') ? 'success' : msg.startsWith('✗') ? 'error' : 'info'
+  addConvertLog(msg, type)
 })

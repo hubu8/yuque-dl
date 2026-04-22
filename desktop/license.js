@@ -1,14 +1,12 @@
 /**
- * 授权码系统 (RSA 非对称签名模式)
+ * 授权码系统 (RSA 非对称签名模式 + 过期时间)
  *
- * 流程:
- * 1. 客户安装软件 → 自动生成机器码 (基于 CPU + 主板 + MAC)
- * 2. 客户把机器码发给你
- * 3. 你用 keygen.js + 私钥 对机器码签名，生成授权码
- * 4. 客户输入授权码，软件用公钥验签
+ * 授权码格式:
+ *   新格式: "expireAt:base64signature"  签名内容 = machineId|expireAt
+ *   旧格式: "base64signature"           签名内容 = machineId (视为永久授权)
  *
- * 安全性: 公钥打包进软件，私钥只在你本地。
- *         即使反编译拿到公钥也无法伪造授权码。
+ *   expireAt = 0 表示永久授权
+ *   expireAt > 0 表示过期时间戳 (ms)
  */
 
 const crypto = require('crypto')
@@ -112,20 +110,49 @@ function generateMachineId() {
 }
 
 /**
+ * 解析授权码格式
+ * @returns {{ expireAt: number, signature: string, isLegacy: boolean }}
+ */
+function parseLicenseKey(licenseKey) {
+  const colonIdx = licenseKey.indexOf(':')
+  if (colonIdx === -1) {
+    // 旧格式: 纯 base64 签名，视为永久授权
+    return { expireAt: 0, signature: licenseKey, isLegacy: true }
+  }
+  const expirePart = licenseKey.substring(0, colonIdx)
+  const signature = licenseKey.substring(colonIdx + 1)
+  const expireAt = parseInt(expirePart, 10)
+  if (isNaN(expireAt)) {
+    return { expireAt: 0, signature: licenseKey, isLegacy: true }
+  }
+  return { expireAt, signature, isLegacy: false }
+}
+
+/**
  * 用公钥验证授权码 (客户端使用)
  * @param {string} machineId  机器码 如 A1B2-C3D4-E5F6-7890
- * @param {string} licenseKey 授权码 (base64 签名)
- * @returns {boolean}
+ * @param {string} licenseKey 授权码
+ * @returns {{ valid: boolean, expireAt: number, expired: boolean }}
  */
 function validateLicense(machineId, licenseKey) {
   try {
     const cleanId = machineId.replace(/-/g, '')
+    const { expireAt, signature, isLegacy } = parseLicenseKey(licenseKey)
+
+    // 构建验签 payload
+    const payload = isLegacy ? cleanId : `${cleanId}|${expireAt}`
     const verify = crypto.createVerify('SHA256')
-    verify.update(cleanId)
+    verify.update(payload)
     verify.end()
-    return verify.verify(PUBLIC_KEY, licenseKey, 'base64')
+    const valid = verify.verify(PUBLIC_KEY, signature, 'base64')
+
+    if (!valid) return { valid: false, expireAt: 0, expired: false }
+
+    // 检查是否过期 (expireAt=0 表示永久)
+    const expired = expireAt > 0 && Date.now() > expireAt
+    return { valid: true, expireAt, expired }
   } catch {
-    return false
+    return { valid: false, expireAt: 0, expired: false }
   }
 }
 
@@ -139,11 +166,12 @@ function getLicenseFilePath(userDataPath) {
 /**
  * 保存授权信息
  */
-function saveLicense(userDataPath, machineId, licenseKey) {
+function saveLicense(userDataPath, machineId, licenseKey, expireAt) {
   const filePath = getLicenseFilePath(userDataPath)
   const data = {
     machineId,
     licenseKey,
+    expireAt: expireAt || 0,
     activatedAt: new Date().toISOString()
   }
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8')
@@ -163,15 +191,44 @@ function loadLicense(userDataPath) {
 }
 
 /**
- * 检查当前机器是否已激活
+ * 检查当前机器是否已激活（含过期检查）
  */
 function checkActivation(userDataPath) {
   const machineId = generateMachineId()
   const saved = loadLicense(userDataPath)
   if (!saved) return { activated: false, machineId }
   if (saved.machineId !== machineId) return { activated: false, machineId }
-  if (!validateLicense(machineId, saved.licenseKey)) return { activated: false, machineId }
-  return { activated: true, machineId, activatedAt: saved.activatedAt }
+
+  const result = validateLicense(machineId, saved.licenseKey)
+  if (!result.valid) return { activated: false, machineId }
+
+  if (result.expired) {
+    return {
+      activated: false,
+      machineId,
+      expired: true,
+      expireAt: result.expireAt,
+      expireText: formatExpireText(result.expireAt)
+    }
+  }
+
+  return {
+    activated: true,
+    machineId,
+    activatedAt: saved.activatedAt,
+    expireAt: result.expireAt,
+    expireText: formatExpireText(result.expireAt)
+  }
+}
+
+/**
+ * 格式化过期时间显示文本
+ */
+function formatExpireText(expireAt) {
+  if (!expireAt || expireAt === 0) return '永久有效'
+  const d = new Date(expireAt)
+  return d.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' }) +
+    ' ' + d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
 }
 
 module.exports = {

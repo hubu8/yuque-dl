@@ -38,6 +38,7 @@
     <div class="tab-bar">
       <button class="tab-item active" data-tab="download">📥 下载</button>
       <button class="tab-item" data-tab="preview">🌐 预览</button>
+      <button class="tab-item" data-tab="convert">🔄 转换</button>
       <button class="tab-item" data-tab="help">📖 帮助</button>
       <span id="licenseStatus" class="license-status">✅ 已激活</span>
     </div>
@@ -103,7 +104,7 @@
             <span>视频链接转 video 标签</span>
           </label>
           <label class="checkbox-label">
-            <input type="checkbox" id="hideFooter">
+            <input type="checkbox" id="hideFooter" checked>
             <span>隐藏页脚信息</span>
           </label>
         </div>
@@ -184,6 +185,82 @@
         </div>
       </div>
     </div><!-- /tabPreview -->
+
+    <!-- ====== 转换页 ====== -->
+    <div id="tabConvert" class="tab-page tab-page-flex">
+      <div class="convert-panel">
+        <div class="convert-header">
+          <h3>🔄 Markdown 格式转换</h3>
+          <p class="convert-desc">选择已下载的知识库目录，将 Markdown 文件批量转换为 PDF 或 Word 格式</p>
+        </div>
+
+        <div class="form-group">
+          <label>输出格式</label>
+          <div class="format-selector">
+            <label class="radio-label">
+              <input type="radio" name="convertFormat" value="pdf" checked>
+              <span>📄 PDF</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="convertFormat" value="word">
+              <span>📝 Word (.docx)</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>知识库目录</label>
+          <div class="input-with-btn">
+            <input type="text" id="convertDir" placeholder="选择已下载的知识库文件夹" readonly>
+            <button type="button" id="selectConvertDirBtn" class="btn-secondary">选择目录</button>
+            <button type="button" id="openConvertDirBtn" class="btn-secondary" title="打开输出目录">📂 打开</button>
+          </div>
+          <span class="hint">转换后的文件将保存到同级的 <code id="convertOutputHint">xxx_pdf</code> 文件夹中</span>
+        </div>
+
+        <div class="form-group">
+          <label for="convertConcurrency">并发数</label>
+          <div class="concurrency-row">
+            <input type="range" id="convertConcurrency" min="1" max="10" value="3" class="concurrency-slider">
+            <span id="concurrencyValue" class="concurrency-value">3</span>
+          </div>
+          <span class="hint">同时转换的文件数量。PDF 建议 2~4（每个需要渲染窗口，占用较多内存）；Word 可设置更高，如 5~10（纯文件写入，速度很快）</span>
+        </div>
+
+        <div class="convert-actions">
+          <button type="button" id="convertStartBtn" class="btn-primary">开始转换</button>
+          <button type="button" id="convertCancelBtn" class="btn-danger" disabled>取消</button>
+        </div>
+
+        <!-- 转换进度 -->
+        <div id="convertProgressSection" class="progress-section" style="display:none;">
+          <div class="progress-header">
+            <span id="convertProgressText">准备中...</span>
+            <span id="convertProgressPercent">0%</span>
+          </div>
+          <div class="progress-bar">
+            <div id="convertProgressFill" class="progress-fill"></div>
+          </div>
+        </div>
+
+        <!-- 转换日志 -->
+        <div class="log-section convert-log-section">
+          <div class="log-header">
+            <span>📋 转换日志</span>
+            <button type="button" id="clearConvertLogBtn" class="btn-text">清空</button>
+          </div>
+          <div id="convertLogArea" class="log-area">
+            <div class="log-item log-info">等待开始...</div>
+          </div>
+        </div>
+
+        <!-- 转换结果 -->
+        <div id="convertResultSection" class="result-section" style="display:none;">
+          <span id="convertResultText"></span>
+          <button type="button" id="openConvertResultBtn" class="btn-text">打开输出目录</button>
+        </div>
+      </div>
+    </div><!-- /tabConvert -->
 
     <!-- ====== 帮助页 ====== -->
     <div id="tabHelp" class="tab-page tab-page-scroll">

@@ -20,5 +20,15 @@ contextBridge.exposeInMainWorld('yuqueAPI', {
   previewStart: (rootPath) => ipcRenderer.invoke('preview-start', rootPath),
   previewStop: () => ipcRenderer.invoke('preview-stop'),
   previewOpen: (url) => ipcRenderer.invoke('preview-open', url),
-  selectPreviewDirectory: () => ipcRenderer.invoke('select-preview-directory')
+  selectPreviewDirectory: () => ipcRenderer.invoke('select-preview-directory'),
+  // 转换相关
+  selectConvertDirectory: () => ipcRenderer.invoke('select-convert-directory'),
+  startConvert: (dirPath, format, concurrency) => ipcRenderer.invoke('start-convert', dirPath, format, concurrency),
+  cancelConvert: () => ipcRenderer.invoke('cancel-convert'),
+  onConvertProgress: (callback) => {
+    ipcRenderer.on('convert-progress', (_, data) => callback(data))
+  },
+  onConvertLog: (callback) => {
+    ipcRenderer.on('convert-log', (_, data) => callback(data))
+  }
 })
