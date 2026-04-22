@@ -204,11 +204,13 @@ app.on('before-quit', () => {
 })
 
 // ============ Markdown 格式转换 (PDF / Word) ============
-const { Marked } = require('marked')
+const { marked } = require('marked')
 const os = require('os')
 
-// 使用独立 marked 实例，避免与 preview-server 的全局配置冲突
-const convertMarked = new Marked()
+// 转换专用的 parse 函数，不使用 preview-server 设置的 highlight 配置
+function convertParse(mdContent) {
+  return marked.parse(mdContent, { highlight: null })
+}
 
 let convertCancelled = false
 
@@ -243,7 +245,7 @@ function getAllMdFiles(dir, baseDir) {
 // 将单个 md 文件转为 Word (.docx)
 async function convertMdToWord(mdFilePath, wordFilePath) {
   const mdContent = fs.readFileSync(mdFilePath, 'utf-8')
-  const htmlBody = convertMarked.parse(mdContent)
+  const htmlBody = convertParse(mdContent)
 
   // 生成 Word 可识别的 HTML 文档 (MHTML 格式)
   const wordHtml = `<!DOCTYPE html>
@@ -375,7 +377,7 @@ const TEMP_DIR = path.join(os.tmpdir(), 'yuque-dl-convert')
 
 async function convertMdToPdf(mdFilePath, pdfFilePath, pool) {
   const mdContent = fs.readFileSync(mdFilePath, 'utf-8')
-  const htmlBody = convertMarked.parse(mdContent)
+  const htmlBody = convertParse(mdContent)
   const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${PDF_STYLE}</style></head><body>${htmlBody}</body></html>`
 
   fs.mkdirSync(path.dirname(pdfFilePath), { recursive: true })
