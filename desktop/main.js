@@ -131,6 +131,15 @@ ipcMain.handle('license-check', async () => {
   return license.checkActivation(app.getPath('userData'))
 })
 
+// 定时复检授权（每 10 分钟），防止不关闭软件绕过过期
+setInterval(() => {
+  if (!mainWindow || mainWindow.isDestroyed()) return
+  const status = license.checkActivation(app.getPath('userData'))
+  if (!status.activated) {
+    mainWindow.webContents.send('license-expired', status)
+  }
+}, 10 * 60 * 1000)
+
 // 激活授权码
 ipcMain.handle('license-activate', async (_, licenseKey) => {
   const machineId = license.generateMachineId()

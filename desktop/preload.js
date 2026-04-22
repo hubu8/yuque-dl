@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld('yuqueAPI', {
   licenseActivate: (key) => ipcRenderer.invoke('license-activate', key),
   licenseCopyMachineId: () => ipcRenderer.invoke('license-copy-machine-id'),
   licenseClear: () => ipcRenderer.invoke('license-clear'),
+  onLicenseExpired: (callback) => safeOn('license-expired', callback),
   // 预览相关
   previewStart: (rootPath) => ipcRenderer.invoke('preview-start', rootPath),
   previewStop: () => ipcRenderer.invoke('preview-stop'),

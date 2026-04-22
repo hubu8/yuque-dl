@@ -97,6 +97,19 @@ activateBtn.addEventListener('click', async () => {
 // 启动时检查授权
 initLicense()
 
+// 监听运行期授权过期通知（主进程定时复检）
+window.yuqueAPI.onLicenseExpired((status) => {
+  licenseOverlay.style.display = 'flex'
+  licenseError.textContent = status.tampered
+    ? '检测到系统时间异常，请校正系统时间后重启'
+    : `授权已过期（${status.expireText || '已过期'}），请重新激活`
+  licenseError.style.display = 'block'
+  const licenseStatusEl = $('#licenseStatus')
+  licenseStatusEl.innerHTML = '⚠️ 已过期 <span class="license-arrow">▾</span>'
+  licenseStatusEl.className = 'license-status license-clickable license-expired'
+  updatePopoverInfo(status)
+})
+
 // ========== 授权浮层交互 ==========
 
 $('#licenseStatus').addEventListener('click', (e) => {
