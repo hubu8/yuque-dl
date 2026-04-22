@@ -242,6 +242,7 @@ const HTML_PAGE = `<!DOCTYPE html>
   }
   .history-item .hi-machine { font-family: Consolas, monospace; font-weight: 600; color: #1d2129; }
   .history-item .hi-dur { color: #4a9eff; }
+  .history-item .hi-remark { color: #f59e0b; font-style: italic; }
   .history-item .hi-time { color: #86909c; }
 </style>
 </head>
@@ -282,6 +283,11 @@ const HTML_PAGE = `<!DOCTYPE html>
     </div>
   </div>
 
+  <div class="field">
+    <label>备注</label>
+    <input type="text" id="remark" placeholder="如：张三 / XX公司 / 测试用">
+  </div>
+
   <button class="btn-generate" id="generateBtn" onclick="generate()">生成授权码</button>
 
   <div class="error-msg" id="errorMsg"></div>
@@ -317,6 +323,7 @@ fetch('/api/records').then(r => r.json()).then(records => {
     duration: r.duration,
     durationLabel: r.durationLabel,
     expireText: r.expireText,
+    remark: r.remark || '',
     time: new Date(r.createdAt).toLocaleString('zh-CN')
   })).reverse()
   renderHistory()
@@ -357,7 +364,7 @@ async function generate() {
     const resp = await fetch('/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ machineId: clean, duration: selectedDuration })
+      body: JSON.stringify({ machineId: clean, duration: selectedDuration, remark: document.getElementById('remark').value.trim() })
     })
     const data = await resp.json()
     if (!data.success) {
@@ -380,6 +387,7 @@ async function generate() {
       duration: selectedDuration,
       durationLabel: DURATION_LABELS[selectedDuration],
       expireText: expireText,
+      remark: document.getElementById('remark').value.trim(),
       time: new Date().toLocaleString('zh-CN')
     })
     renderHistory()
@@ -408,6 +416,7 @@ function renderHistory() {
     '<span class="hi-machine">' + h.machineId + '</span> ' +
     '<span class="hi-dur">' + (h.durationLabel || DURATION_LABELS[h.duration] || h.duration) + '</span> ' +
     '<span class="hi-expire">' + (h.expireText || '') + '</span> ' +
+    (h.remark ? '<span class="hi-remark">' + h.remark + '</span> ' : '') +
     '<span class="hi-time">' + h.time + '</span>' +
     '</div>'
   ).join('')
@@ -429,7 +438,7 @@ const server = http.createServer((req, res) => {
     req.on('data', chunk => { body += chunk })
     req.on('end', () => {
       try {
-        const { machineId, duration } = JSON.parse(body)
+        const { machineId, duration, remark } = JSON.parse(body)
         const expireAt = calcExpireAt(duration)
         const licenseKey = generateLicense(machineId, expireAt)
 
@@ -442,6 +451,7 @@ const server = http.createServer((req, res) => {
           expireAt,
           expireText: expireAt === 0 ? '永久有效' : new Date(expireAt).toLocaleString('zh-CN'),
           licenseKey,
+          remark: remark || '',
           createdAt: new Date().toISOString()
         })
 
