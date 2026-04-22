@@ -168,11 +168,13 @@ function getLicenseFilePath(userDataPath) {
  */
 function saveLicense(userDataPath, machineId, licenseKey, expireAt) {
   const filePath = getLicenseFilePath(userDataPath)
+  const now = Date.now()
   const data = {
     machineId,
     licenseKey,
     expireAt: expireAt || 0,
-    activatedAt: new Date().toISOString()
+    activatedAt: new Date().toISOString(),
+    lastCheckTime: now
   }
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8')
 }
@@ -191,7 +193,18 @@ function loadLicense(userDataPath) {
 }
 
 /**
- * 检查当前机器是否已激活（含过期检查）
+ * 更新最后校验时间
+ */
+function updateLastCheckTime(userDataPath) {
+  const filePath = getLicenseFilePath(userDataPath)
+  const saved = loadLicense(userDataPath)
+  if (!saved) return
+  saved.lastCheckTime = Date.now()
+  fs.writeFileSync(filePath, JSON.stringify(saved, null, 2), 'utf-8')
+}
+
+/**
+ * 检查当前机器是否已激活（含过期检查 + 时间回调检测）
  */
 function checkActivation(userDataPath) {
   const machineId = generateMachineId()
@@ -202,6 +215,19 @@ function checkActivation(userDataPath) {
   const result = validateLicense(machineId, saved.licenseKey)
   if (!result.valid) return { activated: false, machineId }
 
+  // 时间回调检测：如果当前时间 < 上次校验时间，说明系统时间被往回调了
+  const now = Date.now()
+  if (result.expireAt > 0 && saved.lastCheckTime && now < saved.lastCheckTime - 60000) {
+    return {
+      activated: false,
+      machineId,
+      expired: true,
+      tampered: true,
+      expireAt: result.expireAt,
+      expireText: '检测到系统时间异常，请校正系统时间后重试'
+    }
+  }
+
   if (result.expired) {
     return {
       activated: false,
@@ -211,6 +237,9 @@ function checkActivation(userDataPath) {
       expireText: formatExpireText(result.expireAt)
     }
   }
+
+  // 校验通过，更新 lastCheckTime
+  updateLastCheckTime(userDataPath)
 
   return {
     activated: true,
