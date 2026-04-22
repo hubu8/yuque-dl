@@ -151,6 +151,12 @@ ipcMain.handle('license-copy-machine-id', async () => {
   return machineId
 })
 
+// 清除授权
+ipcMain.handle('license-clear', async () => {
+  license.clearLicense(app.getPath('userData'))
+  return { success: true }
+})
+
 // ============ 预览服务（主进程内运行） ============
 const previewServer = require('./preview-server')
 let previewPort = null

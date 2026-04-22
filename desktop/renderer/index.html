@@ -40,7 +40,28 @@
       <button class="tab-item" data-tab="preview">🌐 预览</button>
       <button class="tab-item" data-tab="convert">🔄 转换</button>
       <button class="tab-item" data-tab="help">📖 帮助</button>
-      <span id="licenseStatus" class="license-status">✅ 已激活</span>
+      <div class="license-status-wrapper">
+        <span id="licenseStatus" class="license-status license-clickable">✅ 已激活 <span class="license-arrow">▾</span></span>
+        <!-- 授权信息浮层 -->
+        <div id="licensePopover" class="license-popover" style="display:none;">
+          <div class="license-popover-row">
+            <span class="license-popover-label">授权状态</span>
+            <span id="popoverStatus" class="license-popover-value">已激活</span>
+          </div>
+          <div class="license-popover-row">
+            <span class="license-popover-label">到期时间</span>
+            <span id="popoverExpire" class="license-popover-value">永久有效</span>
+          </div>
+          <div class="license-popover-row">
+            <span class="license-popover-label">机器码</span>
+            <span id="popoverMachineId" class="license-popover-value license-popover-mono">-</span>
+          </div>
+          <div class="license-popover-actions">
+            <button type="button" id="popoverCopyBtn" class="btn-secondary btn-sm">📋 复制机器码</button>
+            <button type="button" id="popoverClearBtn" class="btn-text license-clear-btn">🗑 清除授权</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- ====== 下载页 ====== -->
@@ -52,6 +73,7 @@
         <label for="url">知识库 URL <span class="required">*</span></label>
         <input type="url" id="url" placeholder="https://www.yuque.com/xxx/yyy" required>
         <span class="hint">语雀知识库的完整地址</span>
+        <span id="urlValidationHint" class="url-validation-hint">请输入正确的语雀知识库地址，如 https://www.yuque.com/用户名/知识库名</span>
       </div>
 
       <!-- 下载目录 -->
@@ -132,6 +154,11 @@
     <div class="log-section">
       <div class="log-header">
         <span>📋 日志</span>
+        <div class="log-filter-group">
+          <button type="button" class="log-filter-btn active" data-filter="all" data-target="logArea">全部</button>
+          <button type="button" class="log-filter-btn" data-filter="success" data-target="logArea">成功</button>
+          <button type="button" class="log-filter-btn" data-filter="error" data-target="logArea">错误</button>
+        </div>
         <button type="button" id="clearLogBtn" class="btn-text">清空</button>
       </div>
       <div id="logArea" class="log-area">
@@ -247,6 +274,11 @@
         <div class="log-section convert-log-section">
           <div class="log-header">
             <span>📋 转换日志</span>
+            <div class="log-filter-group">
+              <button type="button" class="log-filter-btn active" data-filter="all" data-target="convertLogArea">全部</button>
+              <button type="button" class="log-filter-btn" data-filter="success" data-target="convertLogArea">成功</button>
+              <button type="button" class="log-filter-btn" data-filter="error" data-target="convertLogArea">错误</button>
+            </div>
             <button type="button" id="clearConvertLogBtn" class="btn-text">清空</button>
           </div>
           <div id="convertLogArea" class="log-area">

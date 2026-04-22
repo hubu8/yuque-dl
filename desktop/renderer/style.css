@@ -26,6 +26,7 @@ body {
   color: var(--c-text);
   line-height: 1.6;
   height: 100vh;
+  overflow: hidden;
 }
 
 /* ========== 主布局：居中 + 响应式宽度 ========== */
@@ -33,7 +34,7 @@ body {
   width: 100%;
   max-width: 860px;
   margin: 0 auto;
-  min-height: 100vh;
+  height: 100vh;
   padding: 20px 24px;
   display: flex;
   flex-direction: column;
@@ -82,6 +83,99 @@ body {
   margin-left: auto;
 }
 
+/* 授权状态浮层包裹器 */
+.license-status-wrapper {
+  margin-left: auto;
+  position: relative;
+}
+
+.license-clickable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.license-clickable:hover {
+  filter: brightness(0.95);
+}
+
+.license-arrow {
+  font-size: 10px;
+  margin-left: 2px;
+  opacity: 0.6;
+}
+
+.license-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 280px;
+  background: var(--c-card);
+  border: 1px solid var(--c-border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  padding: 16px;
+  z-index: 100;
+  animation: popoverIn 0.15s ease;
+}
+
+@keyframes popoverIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.license-popover-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid #f0f1f3;
+}
+
+.license-popover-row:last-of-type {
+  border-bottom: none;
+}
+
+.license-popover-label {
+  font-size: 12px;
+  color: var(--c-text3);
+  font-weight: 500;
+}
+
+.license-popover-value {
+  font-size: 12px;
+  color: var(--c-text);
+  font-weight: 600;
+}
+
+.license-popover-mono {
+  font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 0.3px;
+}
+
+.license-popover-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--c-border);
+}
+
+.btn-sm {
+  padding: 4px 10px;
+  font-size: 11px;
+}
+
+.license-clear-btn {
+  color: var(--c-danger) !important;
+  font-size: 11px !important;
+}
+
+.license-clear-btn:hover {
+  text-decoration: underline;
+}
+
 .tab-page {
   display: none;
 }
@@ -94,7 +188,7 @@ body {
   flex-direction: column;
   flex: 1;
   min-height: 0;
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 .tab-page-flex.active {
@@ -145,6 +239,17 @@ body {
   border-radius: 10px;
   white-space: nowrap;
   font-weight: 500;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 600px) {
+  .license-status {
+    max-width: 100px;
+    font-size: 10px;
+    padding: 2px 6px;
+  }
 }
 
 .license-status.license-expired {
@@ -359,6 +464,19 @@ body {
   transition: width 0.3s ease;
 }
 
+.progress-section.progress-done {
+  border-color: #b7ebc9;
+  background: #f0fdf4;
+}
+
+.progress-section.progress-done .progress-fill {
+  background: var(--c-primary);
+}
+
+.progress-section.progress-done .progress-header {
+  color: #1a7a3a;
+}
+
 /* ========== 日志区域 ========== */
 .log-section {
   margin-top: 10px;
@@ -384,6 +502,38 @@ body {
   font-weight: 600;
   color: var(--c-text3);
   flex-shrink: 0;
+  gap: 6px;
+}
+
+.log-filter-group {
+  display: flex;
+  gap: 2px;
+  margin-left: 8px;
+}
+
+.log-filter-btn {
+  padding: 2px 8px;
+  font-size: 11px;
+  border: 1px solid var(--c-border);
+  background: #fff;
+  color: var(--c-text3);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.log-filter-btn:hover {
+  background: #f0f1f3;
+}
+
+.log-filter-btn.active {
+  background: var(--c-accent);
+  color: #fff;
+  border-color: var(--c-accent);
+}
+
+.log-item.log-hidden {
+  display: none;
 }
 
 .log-area {
@@ -404,6 +554,23 @@ body {
 .log-info { color: var(--c-text3); }
 .log-success { color: var(--c-primary); }
 .log-error { color: var(--c-danger); }
+
+/* URL 校验 */
+.form-group input.input-invalid {
+  border-color: var(--c-danger);
+  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+}
+
+.url-validation-hint {
+  display: none;
+  font-size: 11px;
+  color: var(--c-danger);
+  margin-top: 3px;
+}
+
+.url-validation-hint.visible {
+  display: block;
+}
 
 /* ========== 结果提示 ========== */
 .result-section {

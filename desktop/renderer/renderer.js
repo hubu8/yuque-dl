@@ -8,6 +8,30 @@ const licenseKeyInput = $('#licenseKeyInput')
 const copyMachineIdBtn = $('#copyMachineIdBtn')
 const activateBtn = $('#activateBtn')
 const licenseError = $('#licenseError')
+const licensePopover = $('#licensePopover')
+const popoverStatus = $('#popoverStatus')
+const popoverExpire = $('#popoverExpire')
+const popoverMachineId = $('#popoverMachineId')
+const popoverCopyBtn = $('#popoverCopyBtn')
+const popoverClearBtn = $('#popoverClearBtn')
+
+// 更新浮层信息
+function updatePopoverInfo(status) {
+  popoverMachineId.textContent = status.machineId || '-'
+  if (status.expired) {
+    popoverStatus.textContent = '已过期'
+    popoverStatus.style.color = 'var(--c-danger)'
+    popoverExpire.textContent = status.expireText || '-'
+  } else if (!status.activated) {
+    popoverStatus.textContent = '未激活'
+    popoverStatus.style.color = 'var(--c-danger)'
+    popoverExpire.textContent = '-'
+  } else {
+    popoverStatus.textContent = '已激活'
+    popoverStatus.style.color = 'var(--c-primary)'
+    popoverExpire.textContent = status.expireText || '永久有效'
+  }
+}
 
 async function initLicense() {
   const status = await window.yuqueAPI.licenseCheck()
@@ -16,22 +40,22 @@ async function initLicense() {
   const licenseStatusEl = $('#licenseStatus')
 
   if (status.expired) {
-    // 授权已过期
     licenseOverlay.style.display = 'flex'
     licenseError.textContent = `授权已过期（${status.expireText}），请重新激活`
     licenseError.style.display = 'block'
-    licenseStatusEl.textContent = '⚠️ 已过期'
-    licenseStatusEl.className = 'license-status license-expired'
+    licenseStatusEl.innerHTML = '⚠️ 已过期 <span class="license-arrow">▾</span>'
+    licenseStatusEl.className = 'license-status license-clickable license-expired'
   } else if (!status.activated) {
     licenseOverlay.style.display = 'flex'
-    licenseStatusEl.textContent = '❌ 未激活'
-    licenseStatusEl.className = 'license-status license-inactive'
+    licenseStatusEl.innerHTML = '❌ 未激活 <span class="license-arrow">▾</span>'
+    licenseStatusEl.className = 'license-status license-clickable license-inactive'
   } else {
-    // 授权有效
     const expireText = status.expireText || '永久有效'
-    licenseStatusEl.textContent = `✅ 到期时间： ${expireText}`
-    licenseStatusEl.className = 'license-status'
+    licenseStatusEl.innerHTML = `✅ ${expireText} <span class="license-arrow">▾</span>`
+    licenseStatusEl.className = 'license-status license-clickable'
   }
+
+  updatePopoverInfo(status)
 }
 
 copyMachineIdBtn.addEventListener('click', async () => {
@@ -58,8 +82,12 @@ activateBtn.addEventListener('click', async () => {
     licenseOverlay.style.display = 'none'
     const licenseStatusEl = $('#licenseStatus')
     const expireText = result.expireText || '永久有效'
-    licenseStatusEl.textContent = `✅ ${expireText}`
-    licenseStatusEl.className = 'license-status'
+    licenseStatusEl.innerHTML = `✅ ${expireText} <span class="license-arrow">▾</span>`
+    licenseStatusEl.className = 'license-status license-clickable'
+    // 同步更新浮层
+    popoverStatus.textContent = '已激活'
+    popoverStatus.style.color = 'var(--c-primary)'
+    popoverExpire.textContent = expireText
   } else {
     licenseError.textContent = result.error
     licenseError.style.display = 'block'
@@ -69,6 +97,48 @@ activateBtn.addEventListener('click', async () => {
 // 启动时检查授权
 initLicense()
 
+// ========== 授权浮层交互 ==========
+
+$('#licenseStatus').addEventListener('click', (e) => {
+  e.stopPropagation()
+  const isVisible = licensePopover.style.display !== 'none'
+  licensePopover.style.display = isVisible ? 'none' : 'block'
+})
+
+// 点击浮层外部关闭
+document.addEventListener('click', (e) => {
+  const statusEl = $('#licenseStatus')
+  if (!licensePopover.contains(e.target) && !statusEl.contains(e.target)) {
+    licensePopover.style.display = 'none'
+  }
+})
+
+// 浮层内复制机器码
+popoverCopyBtn.addEventListener('click', async () => {
+  await window.yuqueAPI.licenseCopyMachineId()
+  popoverCopyBtn.textContent = '✅ 已复制'
+  setTimeout(() => { popoverCopyBtn.textContent = '📋 复制机器码' }, 2000)
+})
+
+// 浮层内清除授权（二次确认）
+popoverClearBtn.addEventListener('click', async () => {
+  if (popoverClearBtn.dataset.confirming === 'true') {
+    // 第二次点击，执行清除
+    await window.yuqueAPI.licenseClear()
+    licensePopover.style.display = 'none'
+    // 重新检查授权状态，会显示未激活并弹出激活窗口
+    initLicense()
+    return
+  }
+  // 第一次点击，显示确认
+  popoverClearBtn.dataset.confirming = 'true'
+  popoverClearBtn.textContent = '❗ 确认清除？'
+  setTimeout(() => {
+    popoverClearBtn.dataset.confirming = ''
+    popoverClearBtn.textContent = '🗑 清除授权'
+  }, 3000)
+})
+
 // ========== Tab 切换 ==========
 document.querySelectorAll('.tab-item').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -77,8 +147,83 @@ document.querySelectorAll('.tab-item').forEach(btn => {
     document.querySelectorAll('.tab-page').forEach(p => p.classList.remove('active'))
     btn.classList.add('active')
     document.getElementById('tab' + target.charAt(0).toUpperCase() + target.slice(1)).classList.add('active')
+
+    // 切到预览/转换页时，如果目录为空且有最近下载路径，自动填入
+    if (lastDownloadedBookPath) {
+      if (target === 'preview' && !previewDirInput.value) {
+        previewDirInput.value = lastDownloadedBookPath
+      }
+      if (target === 'convert' && !convertDirInput.value) {
+        convertDirInput.value = lastDownloadedBookPath
+        // 同步更新输出目录提示
+        const dirName = lastDownloadedBookPath.split(/[\\/]/).pop()
+        const suffix = getConvertFormat() === 'word' ? '_word' : '_pdf'
+        convertOutputHint.textContent = dirName + suffix
+      }
+    }
   })
 })
+
+// ========== URL 格式校验 ==========
+const urlInput = $('#url')
+const urlValidationHint = $('#urlValidationHint')
+const YUQUE_URL_RE = /^https?:\/\/[\w.-]*yuque\.com\/.+\/.+/
+
+urlInput.addEventListener('input', () => {
+  const val = urlInput.value.trim()
+  if (!val || YUQUE_URL_RE.test(val)) {
+    urlInput.classList.remove('input-invalid')
+    urlValidationHint.classList.remove('visible')
+  } else {
+    urlInput.classList.add('input-invalid')
+    urlValidationHint.classList.add('visible')
+  }
+})
+
+urlInput.addEventListener('blur', () => {
+  const val = urlInput.value.trim()
+  if (!val) {
+    urlInput.classList.remove('input-invalid')
+    urlValidationHint.classList.remove('visible')
+  }
+})
+
+// ========== 日志筛选 ==========
+let logFilterState = {}  // { logArea: 'all', convertLogArea: 'all' }
+
+document.querySelectorAll('.log-filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const filter = btn.dataset.filter
+    const targetId = btn.dataset.target
+    const targetArea = document.getElementById(targetId)
+    if (!targetArea) return
+
+    // 更新按钮激活状态
+    btn.closest('.log-filter-group').querySelectorAll('.log-filter-btn').forEach(b => b.classList.remove('active'))
+    btn.classList.add('active')
+    logFilterState[targetId] = filter
+
+    // 筛选日志项
+    targetArea.querySelectorAll('.log-item').forEach(item => {
+      if (filter === 'all') {
+        item.classList.remove('log-hidden')
+      } else {
+        const match = item.classList.contains(`log-${filter}`)
+        item.classList.toggle('log-hidden', !match)
+      }
+    })
+  })
+})
+
+// 日志添加时自动应用当前筛选状态
+function applyLogFilter(item, targetId) {
+  const filter = logFilterState[targetId]
+  if (filter && filter !== 'all') {
+    if (!item.classList.contains(`log-${filter}`)) {
+      item.classList.add('log-hidden')
+    }
+  }
+}
 
 // ========== 主界面逻辑 ==========
 const form = $('#downloadForm')
@@ -98,6 +243,7 @@ const resultText = $('#resultText')
 
 let isDownloading = false
 let resultPath = ''
+let lastDownloadedBookPath = '' // 最近一次下载成功的知识库目录
 
 // 选择目录
 selectDirBtn.addEventListener('click', async () => {
@@ -139,6 +285,7 @@ function addLog(msg, type = 'info') {
   div.className = `log-item log-${type}`
   div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`
   logArea.appendChild(div)
+  applyLogFilter(div, 'logArea')
   logArea.scrollTop = logArea.scrollHeight
 }
 
@@ -176,6 +323,7 @@ form.addEventListener('submit', async (e) => {
 
   setDownloading(true)
   progressSection.style.display = 'block'
+  progressSection.classList.remove('progress-done')
   resultSection.style.display = 'none'
   progressFill.style.width = '0%'
   progressText.textContent = '准备中...'
@@ -188,17 +336,23 @@ form.addEventListener('submit', async (e) => {
 
   if (result.success) {
     resultPath = result.path
+    lastDownloadedBookPath = result.path
     resultSection.style.display = 'flex'
     resultSection.className = 'result-section'
     resultText.textContent = `✅ 下载完成!`
     openDirBtn.style.display = 'inline'
     addLog('下载完成!', 'success')
+    // 进度条变为完成状态，3秒后淡出
+    progressSection.classList.add('progress-done')
+    progressText.textContent = '✅ 下载完成'
+    setTimeout(() => { progressSection.style.display = 'none' }, 3000)
   } else {
     resultSection.style.display = 'flex'
     resultSection.className = 'result-section error'
     resultText.textContent = `❌ ${result.error}`
     openDirBtn.style.display = 'none'
     addLog(`错误: ${result.error}`, 'error')
+    progressSection.style.display = 'none'
   }
 })
 
@@ -310,6 +464,7 @@ const convertOutputHint = $('#convertOutputHint')
 
 let isConverting = false
 let convertResultPath = ''
+let convertStartTime = 0
 const concurrencySlider = $('#convertConcurrency')
 const concurrencyValueLabel = $('#concurrencyValue')
 
@@ -379,6 +534,7 @@ function addConvertLog(msg, type = 'info') {
   div.className = `log-item log-${type}`
   div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`
   convertLogArea.appendChild(div)
+  applyLogFilter(div, 'convertLogArea')
   convertLogArea.scrollTop = convertLogArea.scrollHeight
 }
 
@@ -400,7 +556,9 @@ convertStartBtn.addEventListener('click', async () => {
   if (isConverting) return
 
   setConverting(true)
+  convertStartTime = Date.now()
   convertProgressSection.style.display = 'block'
+  convertProgressSection.classList.remove('progress-done')
   convertResultSection.style.display = 'none'
   convertProgressFill.style.width = '0%'
   convertProgressText.textContent = '准备中...'
@@ -415,15 +573,22 @@ convertStartBtn.addEventListener('click', async () => {
     convertResultPath = result.path
     convertResultSection.style.display = 'flex'
     convertResultSection.className = 'result-section'
-    convertResultText.textContent = `✅ 转换完成! 成功 ${result.successCount} 个，失败 ${result.failCount} 个`
+    const elapsed = Date.now() - convertStartTime
+    const elapsedText = formatElapsed(elapsed)
+    convertResultText.textContent = `✅ 转换完成! 成功 ${result.successCount} 个，失败 ${result.failCount} 个，耗时 ${elapsedText}`
     openConvertResultBtn.style.display = 'inline'
-    addConvertLog('转换完成!', 'success')
+    addConvertLog(`转换完成! 耗时 ${elapsedText}`, 'success')
+    // 进度条变为完成状态，3秒后淡出
+    convertProgressSection.classList.add('progress-done')
+    convertProgressText.textContent = '✅ 转换完成'
+    setTimeout(() => { convertProgressSection.style.display = 'none' }, 3000)
   } else {
     convertResultSection.style.display = 'flex'
     convertResultSection.className = 'result-section error'
     convertResultText.textContent = `❌ ${result.error}`
     openConvertResultBtn.style.display = 'none'
     addConvertLog(`错误: ${result.error}`, 'error')
+    convertProgressSection.style.display = 'none'
   }
 })
 
@@ -455,3 +620,12 @@ window.yuqueAPI.onConvertLog((msg) => {
   const type = msg.startsWith('✓') ? 'success' : msg.startsWith('✗') ? 'error' : 'info'
   addConvertLog(msg, type)
 })
+
+// ========== 工具函数 ==========
+function formatElapsed(ms) {
+  const sec = Math.floor(ms / 1000)
+  if (sec < 60) return `${sec} 秒`
+  const min = Math.floor(sec / 60)
+  const remainSec = sec % 60
+  return `${min} 分 ${remainSec} 秒`
+}

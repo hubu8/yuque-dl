@@ -264,10 +264,21 @@ function formatExpireText(expireAt) {
     ' ' + d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
 }
 
+/**
+ * 清除授权信息
+ */
+function clearLicense(userDataPath) {
+  const filePath = getLicenseFilePath(userDataPath)
+  if (fs.existsSync(filePath)) {
+    fs.unlinkSync(filePath)
+  }
+}
+
 module.exports = {
   generateMachineId,
   validateLicense,
   saveLicense,
   loadLicense,
-  checkActivation
+  checkActivation,
+  clearLicense
 }
