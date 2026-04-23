@@ -677,6 +677,35 @@ body {
   margin-top: 6px;
 }
 
+.license-contact {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--c-border);
+  text-align: center;
+}
+
+.license-contact p {
+  font-size: 12px;
+  color: var(--c-text3);
+  line-height: 1.7;
+  margin: 0;
+}
+
+.license-contact p:first-child {
+  font-weight: 600;
+  color: var(--c-text2);
+}
+
+/* ========== 底部联系栏 ========== */
+.app-footer {
+  flex-shrink: 0;
+  text-align: center;
+  font-size: 11px;
+  color: var(--c-text4);
+  padding: 8px 0 2px;
+  border-top: 1px solid var(--c-border);
+}
+
 /* ========== 滚动条美化 ========== */
 .log-area::-webkit-scrollbar {
   width: 5px;
