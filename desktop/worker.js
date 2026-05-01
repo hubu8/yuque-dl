@@ -153,7 +153,22 @@ async function runDownload(params) {
   if (!bookId) throw new Error('未找到知识库 ID，请检查 URL 是否正确')
   if (!tocList || tocList.length === 0) throw new Error('知识库目录为空')
 
-  sendLog(`知识库: ${bookName} (共 ${tocList.length} 篇)`)
+  // 统计实际需要下载的文档数量
+  let docCount = 0
+  for (const item of tocList) {
+    if (typeof item.type !== 'string') continue
+    const itemType = item.type.toLowerCase()
+    if (itemType === ARTICLE_TOC_TYPE.TITLE || item['child_uuid'] !== '' || itemType === ARTICLE_TOC_TYPE.LINK) {
+      if (itemType === ARTICLE_CONTENT_TYPE.DOC) {
+        docCount++
+      }
+    } else if (item.url) {
+      docCount++
+    }
+  }
+
+  sendLog(`知识库: ${bookName} (共 ${tocList.length} 篇，需下载 ${docCount} 篇)`)
+  process.send({ type: 'doc-count', data: { docCount, total: tocList.length, bookName } })
 
   const bookPath = path.resolve(distDir, bookName ? fixPath(bookName) : String(bookId))
   await mkdir(bookPath, { recursive: true })

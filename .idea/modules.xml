@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/yuque-dl.iml" filepath="$PROJECT_DIR$/.idea/yuque-dl.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/yuque-dl-fork.iml" filepath="$PROJECT_DIR$/.idea/yuque-dl-fork.iml" />
     </modules>
   </component>
 </project>

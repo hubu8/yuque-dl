@@ -242,6 +242,7 @@ function applyLogFilter(item, targetId) {
 const form = $('#downloadForm')
 const startBtn = $('#startBtn')
 const cancelBtn = $('#cancelBtn')
+const checkDocCountBtn = $('#checkDocCountBtn')
 const selectDirBtn = $('#selectDirBtn')
 const openDistDirBtn = $('#openDistDirBtn')
 const clearLogBtn = $('#clearLogBtn')
@@ -251,6 +252,8 @@ const progressSection = $('#progressSection')
 const progressText = $('#progressText')
 const progressPercent = $('#progressPercent')
 const progressFill = $('#progressFill')
+const docCountSection = $('#docCountSection')
+const docCountText = $('#docCountText')
 const resultSection = $('#resultSection')
 const resultText = $('#resultText')
 
@@ -307,8 +310,39 @@ function setDownloading(downloading) {
   isDownloading = downloading
   startBtn.disabled = downloading
   cancelBtn.disabled = !downloading
+  checkDocCountBtn.disabled = downloading
   startBtn.textContent = downloading ? '下载中...' : '开始下载'
 }
+
+// 检测文档数量
+checkDocCountBtn.addEventListener('click', async () => {
+  const url = $('#url').value.trim()
+  if (!url) {
+    addLog('请输入知识库 URL', 'error')
+    return
+  }
+
+  checkDocCountBtn.disabled = true
+  checkDocCountBtn.textContent = '检测中...'
+  docCountSection.style.display = 'none'
+
+  const result = await window.yuqueAPI.checkDocCount({
+    url,
+    token: $('#token').value.trim() || undefined,
+    key: $('#key').value.trim() || undefined
+  })
+
+  checkDocCountBtn.disabled = false
+  checkDocCountBtn.textContent = '📊 检测文档数量'
+
+  if (result.success) {
+    docCountText.textContent = `📚 知识库《${result.bookName}》共 ${result.total} 篇，需下载 ${result.docCount} 篇`
+    docCountSection.style.display = 'block'
+    addLog(`检测完成: 知识库《${result.bookName}》共 ${result.total} 篇，需下载 ${result.docCount} 篇`, 'success')
+  } else {
+    addLog(`检测失败: ${result.error}`, 'error')
+  }
+})
 
 // 提交表单 - 开始下载
 form.addEventListener('submit', async (e) => {
@@ -337,6 +371,7 @@ form.addEventListener('submit', async (e) => {
   setDownloading(true)
   progressSection.style.display = 'block'
   progressSection.classList.remove('progress-done')
+  docCountSection.style.display = 'none'
   resultSection.style.display = 'none'
   progressFill.style.width = '0%'
   progressText.textContent = '准备中...'
@@ -389,6 +424,12 @@ window.yuqueAPI.onProgress((data) => {
 window.yuqueAPI.onLog((msg) => {
   const type = msg.startsWith('✓') ? 'success' : msg.startsWith('✗') ? 'error' : 'info'
   addLog(msg, type)
+})
+
+// 监听文档数量
+window.yuqueAPI.onDocCount((data) => {
+  docCountText.textContent = `📚 知识库《${data.bookName}》共 ${data.total} 篇，需下载 ${data.docCount} 篇`
+  docCountSection.style.display = 'block'
 })
 
 // ========== 预览功能 ==========

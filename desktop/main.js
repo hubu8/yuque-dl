@@ -2,7 +2,76 @@ const { app, BrowserWindow, ipcMain, dialog, shell, clipboard } = require('elect
 const path = require('path')
 const fs = require('fs')
 const { fork } = require('child_process')
+const axios = require('axios')
 const license = require('./license')
+
+// ============ 文档数量检测相关常量与函数 ============
+const DEFAULT_COOKIE_KEY = '_yuque_session'
+
+const ARTICLE_TOC_TYPE = {
+  TITLE: 'title',
+  LINK: 'link',
+  DOC: 'doc'
+}
+
+const ARTICLE_CONTENT_TYPE = {
+  BOARD: 'board',
+  TABLE: 'table',
+  SHEET: 'sheet',
+  DOC: 'doc'
+}
+
+function getHeaders(params) {
+  const { key = DEFAULT_COOKIE_KEY, token } = params
+  const headers = {
+    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+  }
+  if (token) headers.cookie = `${key}=${token};`
+  return headers
+}
+
+function genCommonOptions(params) {
+  return {
+    headers: getHeaders(params),
+    beforeRedirect: (options) => {
+      options.headers = {
+        ...(options?.headers || {}),
+        ...getHeaders(params)
+      }
+    }
+  }
+}
+
+async function getKnowledgeBaseInfo(url, headerParams) {
+  const knowledgeBaseReg = /decodeURIComponent\("(.+)"\)\);/m
+  const { data: html, status } = await axios.get(url, genCommonOptions(headerParams))
+  if (status !== 200 || !html) return {}
+  const match = knowledgeBaseReg.exec(html)
+  if (!match || !match[1]) return {}
+  const jsonData = JSON.parse(decodeURIComponent(match[1]))
+  if (!jsonData.book) return {}
+  return {
+    bookId: jsonData.book.id,
+    bookName: jsonData.book.name,
+    tocList: jsonData.book.toc || []
+  }
+}
+
+function countDocs(tocList) {
+  let docCount = 0
+  for (const item of tocList) {
+    if (typeof item.type !== 'string') continue
+    const itemType = item.type.toLowerCase()
+    if (itemType === ARTICLE_TOC_TYPE.TITLE || item['child_uuid'] !== '' || itemType === ARTICLE_TOC_TYPE.LINK) {
+      if (itemType === ARTICLE_CONTENT_TYPE.DOC) {
+        docCount++
+      }
+    } else if (item.url) {
+      docCount++
+    }
+  }
+  return docCount
+}
 
 let mainWindow
 
@@ -95,6 +164,8 @@ ipcMain.handle('start-download', async (_, params) => {
         mainWindow.webContents.send('download-progress', msg.data)
       } else if (msg.type === 'log') {
         mainWindow.webContents.send('download-log', msg.data)
+      } else if (msg.type === 'doc-count') {
+        mainWindow.webContents.send('download-doc-count', msg.data)
       } else if (msg.type === 'done') {
         safeResolve({ success: true, path: msg.data })
       } else if (msg.type === 'error') {
@@ -122,6 +193,31 @@ ipcMain.handle('cancel-download', async () => {
     return true
   }
   return false
+})
+
+// 检测文档数量（不下载，仅获取信息并统计）
+ipcMain.handle('check-doc-count', async (_, params) => {
+  try {
+    const { url, token, key } = params
+    if (!url) {
+      return { success: false, error: '请输入知识库 URL' }
+    }
+
+    const info = await getKnowledgeBaseInfo(url, { token, key })
+    const { bookId, tocList, bookName } = info
+
+    if (!bookId) {
+      return { success: false, error: '未找到知识库 ID，请检查 URL 是否正确' }
+    }
+    if (!tocList || tocList.length === 0) {
+      return { success: false, error: '知识库目录为空' }
+    }
+
+    const docCount = countDocs(tocList)
+    return { success: true, docCount, total: tocList.length, bookName }
+  } catch (e) {
+    return { success: false, error: e.message || '检测失败' }
+  }
 })
 
 // ============ 授权相关 ============

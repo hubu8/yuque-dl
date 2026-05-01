@@ -419,6 +419,15 @@ body {
   transition: background 0.15s;
 }
 .btn-secondary:hover { background: #f5f6f7; }
+.btn-secondary:disabled { background: #f5f6f7; color: var(--c-text4); cursor: not-allowed; }
+
+/* 操作区检测按钮微调 */
+.actions .btn-secondary {
+  padding: 10px 16px;
+  font-size: 13px;
+  border-radius: 8px;
+  font-weight: 500;
+}
 
 .btn-text {
   background: none;
@@ -429,6 +438,18 @@ body {
   font-weight: 500;
 }
 .btn-text:hover { text-decoration: underline; }
+
+/* ========== 文档数量提示 ========== */
+.doc-count-section {
+  margin-top: 10px;
+  padding: 10px 18px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: var(--radius);
+  font-size: 13px;
+  color: #1e40af;
+  flex-shrink: 0;
+}
 
 /* ========== 进度条 ========== */
 .progress-section {

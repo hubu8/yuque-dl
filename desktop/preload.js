@@ -12,8 +12,10 @@ contextBridge.exposeInMainWorld('yuqueAPI', {
   openDirectory: (dir) => ipcRenderer.invoke('open-directory', dir),
   startDownload: (params) => ipcRenderer.invoke('start-download', params),
   cancelDownload: () => ipcRenderer.invoke('cancel-download'),
+  checkDocCount: (params) => ipcRenderer.invoke('check-doc-count', params),
   onProgress: (callback) => safeOn('download-progress', callback),
   onLog: (callback) => safeOn('download-log', callback),
+  onDocCount: (callback) => safeOn('download-doc-count', callback),
   // 授权相关
   licenseCheck: () => ipcRenderer.invoke('license-check'),
   licenseActivate: (key) => ipcRenderer.invoke('license-activate', key),
