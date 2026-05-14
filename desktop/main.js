@@ -5,6 +5,46 @@ const { fork } = require('child_process')
 const axios = require('axios')
 const license = require('./license')
 
+// ============ 参数配置持久化 ============
+const CONFIG_FILE = path.join(app.getPath('userData'), 'download-config.json')
+
+function getDefaultConfig() {
+  return {
+    url: '',
+    distDir: path.join(app.getPath('documents'), 'yuque-download'),
+    token: '',
+    key: '_yuque_session',
+    ignoreImg: false,
+    ignoreAttachments: false,
+    toc: false,
+    incremental: false,
+    convertMarkdownVideoLinks: false,
+    hideFooter: true
+  }
+}
+
+function readConfig() {
+  try {
+    if (fs.existsSync(CONFIG_FILE)) {
+      const content = fs.readFileSync(CONFIG_FILE, 'utf-8')
+      return { ...getDefaultConfig(), ...JSON.parse(content) }
+    }
+  } catch (err) {
+    console.error('读取配置文件失败:', err)
+  }
+  return getDefaultConfig()
+}
+
+function saveConfig(config) {
+  try {
+    fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2))
+    return true
+  } catch (err) {
+    console.error('保存配置文件失败:', err)
+    return false
+  }
+}
+
 // ============ 文档数量检测相关常量与函数 ============
 const DEFAULT_COOKIE_KEY = '_yuque_session'
 
@@ -117,6 +157,16 @@ ipcMain.handle('select-directory', async (_, currentDir) => {
 // 获取默认下载路径
 ipcMain.handle('get-default-download-path', () => {
   return path.join(app.getPath('documents'), 'yuque-download')
+})
+
+// 读取下载配置
+ipcMain.handle('get-download-config', () => {
+  return readConfig()
+})
+
+// 保存下载配置
+ipcMain.handle('save-download-config', (_, config) => {
+  return saveConfig(config)
 })
 
 // 打开目录

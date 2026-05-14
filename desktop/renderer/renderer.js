@@ -270,10 +270,42 @@ selectDirBtn.addEventListener('click', async () => {
   }
 })
 
-// 启动时设置默认下载路径
-window.yuqueAPI.getDefaultDownloadPath().then(p => {
-  $('#distDir').value = p
-})
+// 启动时加载保存的下载配置
+async function loadDownloadConfig() {
+  const config = await window.yuqueAPI.getDownloadConfig()
+  if (config) {
+    $('#url').value = config.url || ''
+    $('#distDir').value = config.distDir || ''
+    $('#token').value = config.token || ''
+    $('#key').value = config.key || '_yuque_session'
+    $('#ignoreImg').checked = config.ignoreImg || false
+    $('#ignoreAttachments').checked = config.ignoreAttachments || false
+    $('#toc').checked = config.toc || false
+    $('#incremental').checked = config.incremental || false
+    $('#convertMarkdownVideoLinks').checked = config.convertMarkdownVideoLinks || false
+    $('#hideFooter').checked = config.hideFooter !== undefined ? config.hideFooter : true
+  }
+}
+
+// 保存下载配置
+async function saveDownloadConfig() {
+  const config = {
+    url: $('#url').value.trim(),
+    distDir: $('#distDir').value.trim(),
+    token: $('#token').value.trim(),
+    key: $('#key').value.trim() || '_yuque_session',
+    ignoreImg: $('#ignoreImg').checked,
+    ignoreAttachments: $('#ignoreAttachments').checked,
+    toc: $('#toc').checked,
+    incremental: $('#incremental').checked,
+    convertMarkdownVideoLinks: $('#convertMarkdownVideoLinks').checked,
+    hideFooter: $('#hideFooter').checked
+  }
+  await window.yuqueAPI.saveDownloadConfig(config)
+}
+
+// 启动时加载配置
+loadDownloadConfig()
 
 // 清空日志
 clearLogBtn.addEventListener('click', () => {
@@ -390,6 +422,8 @@ form.addEventListener('submit', async (e) => {
     resultText.textContent = `✅ 下载完成!`
     openDirBtn.style.display = 'inline'
     addLog('下载完成!', 'success')
+    // 保存当前配置
+    saveDownloadConfig()
     // 进度条变为完成状态，3秒后淡出
     progressSection.classList.add('progress-done')
     progressText.textContent = '✅ 下载完成'
