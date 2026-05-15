@@ -177,10 +177,16 @@ function startServer(rootPath, port) {
     if (server) { server.close(); server = null }
 
     server = http.createServer((req, res) => {
+
       let urlPath = decodeURIComponent(req.url.split('?')[0])
       if (urlPath === '/') urlPath = '/index.md'
 
-      const filePath = path.join(rootPath, urlPath)
+      const filePath = path.resolve(path.join(rootPath, urlPath))
+      if (!filePath.startsWith(path.resolve(rootPath) + path.sep) && filePath !== path.resolve(rootPath)) {
+        res.writeHead(403, { 'Content-Type': 'text/plain' })
+        res.end('Forbidden')
+        return
+      }
       const ext = path.extname(filePath).toLowerCase()
 
       if (ext === '.md') {
