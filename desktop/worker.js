@@ -4,17 +4,67 @@
  */
 const path = require('path')
 const fs = require('fs')
+const os = require('os')
+
+// ============ 文件日志（最先初始化，捕获后续所有错误） ============
+let LOG_FILE = path.join(os.tmpdir(), 'yuque-dl-worker.log')
+
+function fileLog(level, msg) {
+  try {
+    const line = `[${new Date().toISOString()}] [${level}] ${msg}\n`
+    fs.appendFileSync(LOG_FILE, line)
+  } catch {}
+}
+
+function setLogFile(dir) {
+  try {
+    fs.mkdirSync(dir, { recursive: true })
+    LOG_FILE = path.join(dir, 'yuque-dl-worker.log')
+  } catch {}
+}
+
+fileLog('INFO', 'Worker 进程启动，Node ' + process.version)
+
+// ============ 依赖加载 ============
 const { mkdirSync, existsSync } = require('fs')
 const { mkdir, writeFile, readFile } = require('fs/promises')
 const stream = require('stream')
 const { promisify } = require('util')
 const { createWriteStream } = require('fs')
-const axios = require('axios')
-const pako = require('pako')
-const mdImg = require('pull-md-img')
-const mdToc = require('markdown-toc')
-const { fromMarkdown } = require('mdast-util-from-markdown')
-const { toMarkdown } = require('mdast-util-to-markdown')
+
+function safeRequire(name) {
+  try {
+    const mod = require(name)
+    fileLog('INFO', `require(${name}) OK`)
+    return mod
+  } catch (e) {
+    fileLog('ERROR', `require(${name}) 失败: ${e.stack || e.message}`)
+    throw e
+  }
+}
+
+const axios = safeRequire('axios')
+const pako = safeRequire('pako')
+const mdImg = safeRequire('pull-md-img')
+const mdToc = safeRequire('markdown-toc')
+const crypto = safeRequire('crypto')
+
+let fromMarkdown = null
+let toMarkdown = null
+
+async function initEsmModules() {
+  if (fromMarkdown) return
+  try {
+    const fm = await import('mdast-util-from-markdown')
+    const tm = await import('mdast-util-to-markdown')
+    fromMarkdown = fm.fromMarkdown
+    toMarkdown = tm.toMarkdown
+    fileLog('INFO', 'ESM 模块加载成功')
+  } catch (e) {
+    fileLog('ERROR', `ESM 模块加载失败: ${e.stack || e.message}`)
+    throw e
+  }
+}
 
 // ============ 常量 ============
 const DEFAULT_COOKIE_KEY = '_yuque_session'
@@ -36,6 +86,7 @@ const ARTICLE_CONTENT_TYPE = {
 
 // ============ 工具函数 ============
 function sendLog(msg) {
+  fileLog('LOG', msg)
   process.send({ type: 'log', data: msg })
 }
 
@@ -50,7 +101,7 @@ function removeEmojis(str) {
 function fixPath(dirPath) {
   if (!dirPath) return ''
   const dirNameReg = /[\\/:*?"<>|\n\r]/g
-  return removeEmojis(dirPath.replace(dirNameReg, '_').replace(/\s/g, ''))
+  return removeEmojis(dirPath.replace(dirNameReg, '_').replace(/[ \t]/g, ''))
 }
 
 function isValidUrl(url) {
@@ -89,7 +140,7 @@ function getMarkdownImageList(mdStr) {
   list = list
     .map((itemUrl) => {
       itemUrl = itemUrl.replace(mdImgReg, '$2')
-      if (!/^http.*/g.test(itemUrl)) return ''
+      if (!/^http.*/.test(itemUrl)) return ''
       return itemUrl
     })
     .filter((url) => Boolean(url))
@@ -293,16 +344,17 @@ function containsMarkdownLabel(str) {
   return /(~~|\*\*|_)/g.test(str)
 }
 
-function fixInlineCode(mdData, htmlData) {
+async function fixInlineCode(mdData, htmlData) {
+  if (!mdData.includes('`')) return mdData
+  await initEsmModules()
   const ast = fromMarkdown(mdData)
   const inlineCodeList = []
-  eachNode(ast, (node, keyChain) => {
-    if (node.type === 'inlineCode') inlineCodeList.push({ node, keyChain })
+  eachNode(ast, (node) => {
+    if (node.type === 'inlineCode') inlineCodeList.push(node)
   })
   if (inlineCodeList.length === 0) return mdData
 
-  inlineCodeList.forEach((item) => {
-    const node = item.node
+  inlineCodeList.forEach((node) => {
     if (!containsHtmlTags(node.value) && !containsMarkdownLabel(node.value)) return
     const tarnsfromCode = node.value
       .replace(/</g, '&lt;')
@@ -315,19 +367,14 @@ function fixInlineCode(mdData, htmlData) {
   return toMarkdown(ast)
 }
 
-function eachNode(node, callback, keyChain) {
-  keyChain = keyChain || []
-  callback(node, keyChain)
+function eachNode(node, callback) {
+  callback(node)
   if (Array.isArray(node.children)) {
-    keyChain.push('children')
-    node.children.forEach((child, index) => {
-      eachNode(child, callback, [...keyChain, String(index)])
-    })
+    node.children.forEach((child) => eachNode(child, callback))
   }
 }
 
 // ============ 图片签名 ============
-const crypto = require('crypto')
 
 function genSign(url) {
   const hash = crypto.createHash('sha256')
@@ -354,7 +401,8 @@ async function downloadFile(params) {
   const { fileUrl, savePath, token, key, fileName } = params
   return axios.get(fileUrl, {
     ...genCommonOptions({ token, key }),
-    responseType: 'stream'
+    responseType: 'stream',
+    timeout: 300000
   }).then(async response => {
     if (response.request?.path?.startsWith('/login')) {
       throw new Error(`"${fileName}" need token`)
@@ -458,41 +506,34 @@ function getVideoList(htmlData, type) {
 }
 
 async function downloadVideo(params) {
-  const { mdData, htmlData, savePath, attachmentsDir, articleTitle, token, key, ignoreAttachments } = params
-  const astTree = fromMarkdown(mdData)
-  const linkList = []
-  eachNode(astTree, (node, keyChain) => {
-    if (node.type === 'link') linkList.push({ node, keyChain })
-  })
-
-  let videoLinkList = linkList.filter(link => /_lake_card.*?videoId/.test(link.node.url))
+  const { mdData, htmlData, savePath, attachmentsDir, token, key, ignoreAttachments } = params
+  const videoLakeCardReg = /\[(.*?)\]\((.*?_lake_card.*?videoId.*?)\)/g
+  let videoLinkMatches = []
+  let m
+  while ((m = videoLakeCardReg.exec(mdData)) !== null) {
+    videoLinkMatches.push({ full: m[0], text: m[1], url: m[2] })
+  }
   let htmlAudioLinkList = getVideoList(htmlData, 'audio')
   let htmlVideoLinkList = getVideoList(htmlData, 'video')
 
-  if (videoLinkList.length === 0 && htmlAudioLinkList.length === 0 && htmlVideoLinkList.length === 0) {
+  if (videoLinkMatches.length === 0 && htmlAudioLinkList.length === 0 && htmlVideoLinkList.length === 0) {
     return { mdData }
   }
 
   if (typeof ignoreAttachments === 'string') {
     const ignoreExtList = ignoreAttachments.split(',')
-    const filterByExt = (list, getExt) => list.filter(item => {
-      const ext = getExt(item)
-      if (!ext) return true
-      return !ignoreExtList.find(e => e === ext)
+    const filterByExt = (list, getName) => list.filter(item => {
+      const name = getName(item)
+      if (!name) return true
+      const dotIdx = name.lastIndexOf('.')
+      if (dotIdx === -1) return true
+      const ext = name.slice(dotIdx + 1)
+      return !ignoreExtList.includes(ext)
     })
-    videoLinkList = filterByExt(videoLinkList, link => {
-      const idx = link.node.url.lastIndexOf('.')
-      return idx === -1 ? '' : link.node.url.slice(idx + 1)
-    })
-    htmlAudioLinkList = filterByExt(htmlAudioLinkList, item => {
-      const idx = item.audioId?.lastIndexOf('.')
-      return idx === -1 ? '' : item.audioId.slice(idx + 1)
-    })
-    htmlVideoLinkList = filterByExt(htmlVideoLinkList, item => {
-      const idx = item.videoId?.lastIndexOf('.')
-      return idx === -1 ? '' : item.videoId.slice(idx + 1)
-    })
-    if (videoLinkList.length === 0 && htmlAudioLinkList.length === 0 && htmlVideoLinkList.length === 0) {
+    videoLinkMatches = filterByExt(videoLinkMatches, item => item.text)
+    htmlAudioLinkList = filterByExt(htmlAudioLinkList, item => item.fileName || item.name || '')
+    htmlVideoLinkList = filterByExt(htmlVideoLinkList, item => item.name || '')
+    if (videoLinkMatches.length === 0 && htmlAudioLinkList.length === 0 && htmlVideoLinkList.length === 0) {
       return { mdData }
     }
   }
@@ -500,26 +541,31 @@ async function downloadVideo(params) {
   const attachmentsDirPath = path.resolve(savePath, attachmentsDir)
   mkdirSync(attachmentsDirPath, { recursive: true })
   let resMdData = mdData
+  let needAstRebuild = false
+  let allListRef = []
 
   try {
-    if (videoLinkList.length > 0) {
+    if (videoLinkMatches.length > 0) {
       const realVideoList = []
-      for (const link of videoLinkList) {
-        const videoInfo = perParseVideoInfo(link.node.url)
+      for (const match of videoLinkMatches) {
+        const videoInfo = perParseVideoInfo(match.url)
         if (!videoInfo) continue
         const res = await getVideoApi({ videoId: videoInfo.videoId, key, token })
         if (!res) continue
-        const fileName = videoInfo.name || videoInfo.videoId.split('/').at(-1) || videoInfo.videoId
-        realVideoList.push({ videoInfo: { ...videoInfo, ...res }, astNode: link, fileName, currentFilePath: path.join(attachmentsDirPath, fileName) })
+        const fileName = videoInfo.name || videoInfo.videoId
+        realVideoList.push({ videoInfo: { ...videoInfo, ...res }, match, fileName, currentFilePath: path.join(attachmentsDirPath, fileName) })
       }
       await Promise.all(realVideoList.map(item => downloadFile({
         fileUrl: item.videoInfo.video, savePath: item.currentFilePath, token, key, fileName: item.videoInfo.name
       })))
+      const replaceMap = new Map()
       realVideoList.forEach(item => {
-        item.astNode.node.url = `${attachmentsDir}${path.sep}${item.fileName}`
-        item.astNode.node.children = [{ type: 'text', value: `音视频附件: ${item.videoInfo.name}` }]
+        const newLink = `[音视频附件: ${item.videoInfo.name}](${attachmentsDir}${path.sep}${item.fileName})`
+        replaceMap.set(item.match.full, newLink)
       })
-      resMdData = toMarkdown(astTree)
+      replaceMap.forEach((newVal, oldVal) => {
+        resMdData = resMdData.split(oldVal).join(newVal)
+      })
     }
 
     if (htmlAudioLinkList.length > 0 || htmlVideoLinkList.length > 0) {
@@ -541,11 +587,22 @@ async function downloadVideo(params) {
         const dlName = item.type === 'audio' ? item.videoInfo.fileName : item.videoInfo.name
         return downloadFile({ fileUrl: dlUrl, savePath: item.currentFilePath, token, key, fileName: dlName })
       }))
-      allList.forEach(info => {
-        const astLinkNode = linkList.find(link => new RegExp(`#${info.videoInfo.id}`, 'gm').test(link.node.url))
+      if (allList.length > 0) needAstRebuild = true
+      allListRef = allList
+    }
+
+    if (needAstRebuild) {
+      await initEsmModules()
+      const astTree = fromMarkdown(resMdData)
+      const linkList = []
+      eachNode(astTree, (node) => {
+        if (node.type === 'link') linkList.push(node)
+      })
+      allListRef.forEach(info => {
+        const astLinkNode = linkList.find(link => new RegExp(`#${info.videoInfo.id}`, 'gm').test(link.url))
         if (astLinkNode) {
-          astLinkNode.node.url = `${attachmentsDir}${path.sep}${info.fileName}`
-          astLinkNode.node.children = [{ type: 'text', value: `音视频附件: ${info.fileName}` }]
+          astLinkNode.url = `${attachmentsDir}${path.sep}${info.fileName}`
+          astLinkNode.children = [{ type: 'text', value: `音视频附件: ${info.fileName}` }]
         }
       })
       resMdData = toMarkdown(astTree)
@@ -559,6 +616,7 @@ async function downloadVideo(params) {
 
 // ============ handleMdData ============
 function handleMdData(rawMdData, options) {
+  if (typeof rawMdData !== 'string') rawMdData = String(rawMdData || '')
   const { articleTitle, articleUrl, toc, convertMarkdownVideoLinks, hideFooter } = options
   let mdData = rawMdData
   mdData = mdData.replace(/<a.*?>(\s*?)<\/a>/gm, '')
@@ -750,7 +808,8 @@ async function downloadArticle(articleInfo, options, progressItem, oldProgressIt
   }
 
   try {
-    mdData = fixInlineCode(mdData, htmlData)
+    mdData = await fixInlineCode(mdData, htmlData)
+    if (typeof mdData !== 'string') mdData = String(mdData || '')
     await writeFile(saveFilePath, handleMdData(mdData, handleMdDataOptions))
     if (attachmentsErrInfo.length > 0) {
       throw new Error(attachmentsErrInfo[0])
@@ -765,11 +824,15 @@ async function runDownload(params) {
   const { url, distDir, token, key, ignoreImg, ignoreAttachments,
     toc, incremental, convertMarkdownVideoLinks, hideFooter } = params
 
+  fileLog('INFO', `runDownload 开始: url=${url}`)
+  await initEsmModules()
   if (!isValidUrl(url)) throw new Error('请输入有效的语雀知识库 URL')
 
   sendLog('正在获取知识库信息...')
+  fileLog('INFO', '获取知识库信息...')
   const info = await getKnowledgeBaseInfo(url, { token, key })
   const { bookId, tocList, bookName, bookSlug, host, imageServiceDomains } = info
+  fileLog('INFO', `知识库: ${bookName}, bookId=${bookId}, tocList=${tocList?.length} 篇`)
 
   if (!bookId) throw new Error('未找到知识库 ID，请检查 URL 是否正确')
   if (!tocList || tocList.length === 0) throw new Error('知识库目录为空')
@@ -789,6 +852,8 @@ async function runDownload(params) {
   process.send({ type: 'doc-count', data: { docCount, total: tocList.length, bookName } })
 
   const bookPath = path.resolve(distDir, bookName ? fixPath(bookName) : String(bookId))
+  setLogFile(bookPath)
+  fileLog('INFO', `日志路径: ${LOG_FILE}, bookPath: ${bookPath}`)
   await mkdir(bookPath, { recursive: true })
 
   const total = tocList.length
@@ -881,6 +946,7 @@ async function runDownload(params) {
 
     let isSuccess = true
     try {
+      fileLog('INFO', `开始下载: ${item.title} (${item.url})`)
       await downloadArticle(
         {
           bookId,
@@ -901,6 +967,7 @@ async function runDownload(params) {
     } catch (e) {
       isSuccess = false
       errCount++
+      fileLog('ERROR', `下载失败: ${item.title} - ${e.stack || e.message}`)
       sendLog(`✗ ${item.title}: ${e.message}`)
     }
 
@@ -989,10 +1056,26 @@ async function runDownload(params) {
 
 // ============ 进程消息处理 ============
 process.on('message', async (params) => {
+  fileLog('INFO', '收到下载消息')
   try {
     const resultPath = await runDownload(params)
+    fileLog('INFO', `下载完成: ${resultPath}`)
     process.send({ type: 'done', data: resultPath })
   } catch (e) {
+    fileLog('ERROR', `下载异常: ${e.stack || e.message}`)
     process.send({ type: 'error', data: e.message || '未知错误' })
   }
+})
+
+process.on('unhandledRejection', (reason) => {
+  const msg = reason?.stack || reason?.message || String(reason)
+  fileLog('ERROR', `unhandledRejection: ${msg}`)
+  try { process.send({ type: 'error', data: `未捕获异常: ${msg}` }) } catch {}
+  process.exit(1)
+})
+
+process.on('uncaughtException', (err) => {
+  fileLog('ERROR', `uncaughtException: ${err.stack || err.message}`)
+  try { process.send({ type: 'error', data: `未捕获异常: ${err.message}` }) } catch {}
+  process.exit(1)
 })

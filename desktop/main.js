@@ -230,7 +230,7 @@ ipcMain.handle('start-download', async (_, params) => {
     downloadProcess.on('exit', (code) => {
       downloadProcess = null
       if (code !== 0 && code !== null) {
-        safeResolve({ success: false, error: `进程异常退出 (code: ${code})` })
+        safeResolve({ success: false, error: `进程异常退出 (code: ${code})，请查看下载目录下的 yuque-dl-worker.log 日志文件` })
       }
     })
   })
@@ -375,6 +375,7 @@ function convertParse(mdContent) {
 }
 
 let convertCancelled = false
+let isConvertingActive = false
 
 // 选择转换目录
 ipcMain.handle('select-convert-directory', async () => {
@@ -589,7 +590,11 @@ async function runWithConcurrency(tasks, concurrency) {
 
 // 开始转换
 ipcMain.handle('start-convert', async (_, dirPath, format, userConcurrency) => {
+  if (isConvertingActive) {
+    return { success: false, error: '转换进行中，请先取消当前转换' }
+  }
   convertCancelled = false
+  isConvertingActive = true
   const outputFormat = format || 'pdf'
   const outputExt = outputFormat === 'word' ? '.doc' : '.pdf'
   const dirSuffix = outputFormat === 'word' ? '_word' : '_pdf'
@@ -666,7 +671,7 @@ ipcMain.handle('start-convert', async (_, dirPath, format, userConcurrency) => {
   } catch (err) {
     return { success: false, error: err.message || String(err) }
   } finally {
-    // 清理窗口池
+    isConvertingActive = false
     if (pool) pool.destroyAll()
   }
 })

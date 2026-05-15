@@ -7,17 +7,20 @@ const path = require('path')
 const { marked } = require('marked')
 const hljs = require('highlight.js')
 
-// marked 配置：GFM + 代码高亮
+const renderer = new marked.Renderer()
+const _origCode = renderer.code.bind(renderer)
+renderer.code = function(code, lang) {
+  if (lang && hljs.getLanguage(lang)) {
+    try { return `<pre><code class="hljs language-${lang}">${hljs.highlight(code, { language: lang }).value}</code></pre>` } catch {}
+  }
+  try { return `<pre><code class="hljs">${hljs.highlightAuto(code).value}</code></pre>` } catch {}
+  return _origCode(code, lang)
+}
+
 marked.setOptions({
   gfm: true,
   breaks: true,
-  highlight(code, lang) {
-    if (lang && hljs.getLanguage(lang)) {
-      try { return hljs.highlight(code, { language: lang }).value } catch {}
-    }
-    try { return hljs.highlightAuto(code).value } catch {}
-    return code
-  }
+  renderer
 })
 
 const MIME_TYPES = {
