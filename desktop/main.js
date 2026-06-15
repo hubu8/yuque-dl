@@ -405,6 +405,25 @@ function getAllMdFiles(dir, baseDir) {
   return files
 }
 
+// 递归复制目录中所有非 .md 文件
+function copyNonMdFiles(srcDir, destDir) {
+  const entries = fs.readdirSync(srcDir, { withFileTypes: true })
+  let count = 0
+  for (const entry of entries) {
+    const srcPath = path.join(srcDir, entry.name)
+    const destPath = path.join(destDir, entry.name)
+    if (entry.isDirectory()) {
+      fs.mkdirSync(destPath, { recursive: true })
+      count += copyNonMdFiles(srcPath, destPath)
+    } else if (!entry.name.endsWith('.md')) {
+      fs.mkdirSync(path.dirname(destPath), { recursive: true })
+      fs.copyFileSync(srcPath, destPath)
+      count++
+    }
+  }
+  return count
+}
+
 // 将单个 md 文件转为 Word (.docx)
 async function convertMdToWord(mdFilePath, wordFilePath) {
   const mdContent = fs.readFileSync(mdFilePath, 'utf-8')
@@ -619,6 +638,12 @@ ipcMain.handle('start-convert', async (_, dirPath, format, userConcurrency) => {
     mainWindow.webContents.send('convert-log', `输出格式: ${outputFormat.toUpperCase()}`)
     mainWindow.webContents.send('convert-log', `并发数: ${concurrency}`)
     mainWindow.webContents.send('convert-log', `输出目录: ${outputDir}`)
+
+    // 复制非 md 文件（图片、附件等）
+    const copiedCount = copyNonMdFiles(dirPath, outputDir)
+    if (copiedCount > 0) {
+      mainWindow.webContents.send('convert-log', `已复制 ${copiedCount} 个非 Markdown 文件（图片、附件等）`)
+    }
 
     // PDF 模式: 初始化窗口池
     if (outputFormat === 'pdf') {
