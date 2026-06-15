@@ -159,6 +159,11 @@ ipcMain.handle('get-default-download-path', () => {
   return path.join(app.getPath('documents'), 'yuque-download')
 })
 
+// 获取应用版本号
+ipcMain.handle('get-app-version', () => {
+  return app.getVersion()
+})
+
 // 读取下载配置
 ipcMain.handle('get-download-config', () => {
   return readConfig()

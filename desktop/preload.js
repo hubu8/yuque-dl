@@ -9,6 +9,7 @@ function safeOn(channel, callback) {
 contextBridge.exposeInMainWorld('yuqueAPI', {
   selectDirectory: (currentDir) => ipcRenderer.invoke('select-directory', currentDir),
   getDefaultDownloadPath: () => ipcRenderer.invoke('get-default-download-path'),
+  getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   getDownloadConfig: () => ipcRenderer.invoke('get-download-config'),
   saveDownloadConfig: (config) => ipcRenderer.invoke('save-download-config', config),
   openDirectory: (dir) => ipcRenderer.invoke('open-directory', dir),

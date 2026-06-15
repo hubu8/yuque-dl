@@ -97,6 +97,14 @@ activateBtn.addEventListener('click', async () => {
 // 启动时检查授权
 initLicense()
 
+// 启动时获取并显示版本号
+window.yuqueAPI.getAppVersion().then(version => {
+  const el1 = document.getElementById('licenseVersion')
+  const el2 = document.getElementById('appVersion')
+  if (el1) el1.textContent = version
+  if (el2) el2.textContent = version
+})
+
 // 监听运行期授权过期通知（主进程定时复检）
 window.yuqueAPI.onLicenseExpired((status) => {
   licenseOverlay.style.display = 'flex'

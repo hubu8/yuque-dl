@@ -717,6 +717,12 @@ body {
   color: var(--c-text2);
 }
 
+.license-version {
+  margin-top: 6px;
+  font-size: 11px;
+  opacity: 0.6;
+}
+
 /* ========== 底部联系栏 ========== */
 .app-footer {
   flex-shrink: 0;
