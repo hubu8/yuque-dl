@@ -1,6 +1,6 @@
 {
   "name": "yuque-dl-desktop",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "语雀知识库下载工具 - 桌面版",
   "main": "main.js",
   "scripts": {
