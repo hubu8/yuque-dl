@@ -374,9 +374,9 @@ app.on('before-quit', () => {
 const { marked } = require('marked')
 const os = require('os')
 
-// 转换专用的 parse 函数，不使用 preview-server 设置的 highlight 配置
+// 转换专用的 parse 函数，使用独立 Renderer 避免被 preview-server 的 highlight 污染
 function convertParse(mdContent) {
-  return marked.parse(mdContent, { highlight: null })
+  return marked.parse(mdContent, { renderer: new marked.Renderer() })
 }
 
 let convertCancelled = false

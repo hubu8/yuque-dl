@@ -341,7 +341,7 @@ function containsHtmlTags(str) {
 }
 
 function containsMarkdownLabel(str) {
-  return /(~~|\*\*|_)/g.test(str)
+  return /(~~|\*\*|_)/.test(str)
 }
 
 async function fixInlineCode(mdData, htmlData) {
@@ -858,7 +858,7 @@ async function runDownload(params) {
 
   const total = tocList.length
   const progressInfo = await getProgress(bookPath)
-  let downloaded = incremental ? 0 : progressInfo.length
+  let downloaded = 0
   let errCount = 0
   const articleUrlPrefix = url.replace(new RegExp(`(.*?/${bookSlug}).*`), '$1')
 
@@ -901,9 +901,7 @@ async function runDownload(params) {
         await docHandle(item)
       } else {
         uuidMap.set(item.uuid, progressItem)
-        downloaded++
         await updateProgress(bookPath, progressInfo, progressItem, true)
-        sendProgress({ current: downloaded, total, title: item.title })
       }
       continue
     }
@@ -974,7 +972,7 @@ async function runDownload(params) {
     await updateProgress(bookPath, progressInfo, progressItem, isSuccess)
     uuidMap.set(item.uuid, progressItem)
     downloaded++
-    sendProgress({ current: downloaded, total, title: item.title })
+    sendProgress({ current: Math.min(downloaded, docCount), total: docCount, title: item.title })
   }
 
   // 生成 index.md 目录文件

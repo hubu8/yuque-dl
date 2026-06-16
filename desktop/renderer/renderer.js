@@ -456,7 +456,7 @@ cancelBtn.addEventListener('click', async () => {
 
 // 监听进度
 window.yuqueAPI.onProgress((data) => {
-  const percent = Math.round((data.current / data.total) * 100)
+  const percent = Math.min(100, Math.round((data.current / data.total) * 100))
   progressFill.style.width = `${percent}%`
   progressText.textContent = `${data.title} (${data.current}/${data.total})`
   progressPercent.textContent = `${percent}%`
@@ -483,8 +483,6 @@ const previewStatus = $('#previewStatus')
 const previewLink = $('#previewLink')
 const previewOpenBtn = $('#previewOpenBtn')
 
-let previewRunning = false
-
 selectPreviewDirBtn.addEventListener('click', async () => {
   const dir = await window.yuqueAPI.selectPreviewDirectory()
   if (dir) previewDirInput.value = dir
@@ -500,7 +498,6 @@ previewStartBtn.addEventListener('click', async () => {
   const result = await window.yuqueAPI.previewStart(dir)
 
   if (result.success) {
-    previewRunning = true
     previewStopBtn.disabled = false
     previewStartBtn.textContent = '已启动'
     const url = `http://127.0.0.1:${result.port}`
@@ -524,7 +521,6 @@ previewStartBtn.addEventListener('click', async () => {
 
 previewStopBtn.addEventListener('click', async () => {
   await window.yuqueAPI.previewStop()
-  previewRunning = false
   previewStartBtn.disabled = false
   previewStartBtn.textContent = '启动预览'
   previewStopBtn.disabled = true
