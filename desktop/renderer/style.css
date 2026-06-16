@@ -70,6 +70,15 @@ body {
   margin-bottom: -2px;
   cursor: pointer;
   transition: color 0.2s, border-color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tab-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
 .tab-item:hover { color: var(--c-text2); }
