@@ -123,7 +123,7 @@ async function createSidebarMulti (path: string): Promise<ISidebarItem[]> {
     if (statRes.isDirectory()) {
       const isHasIndex = await fileExists(join(dirPath,'index.md'))
       const item: any = {
-        text: n,
+        text: removePathUUID(n),
         collapsed: true,
         items: await createSideBarItems(path, n)
       }
@@ -131,7 +131,7 @@ async function createSidebarMulti (path: string): Promise<ISidebarItem[]> {
       data.push(item)
     } else {
       data.push({
-        text: n.slice(0, n.lastIndexOf('.')),
+        text: removePathUUID(n.slice(0, n.lastIndexOf('.'))),
         link: `/${n}`
       })
     }
@@ -204,7 +204,7 @@ async function createSideBarItems (
       const items = await createSideBarItems(join(targetPath), ...reset, fname)
       if (items.length > 0) {
         const sidebarItem: any = {
-          text: fname,
+          text: removePathUUID(fname),
           items
         }
         // vitePress sidebar option collapsed
@@ -226,11 +226,15 @@ async function createSideBarItems (
       }
       const fileName = fname.replace(/\.md$/, '')
       const item = {
-        text: fileName,
+        text: removePathUUID(fileName),
         link: '/' + [...reset.map(decodeURIComponent), `${encodeURI(fileName)}.html`].join('/')
       }
       result.push(item)
     }
   }
   return result
+}
+
+function removePathUUID(itemName: string) {
+  return itemName.replace(/_.*?$/g, '')
 }

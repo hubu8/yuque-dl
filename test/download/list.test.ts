@@ -5,6 +5,7 @@ import { TestTools } from '../helpers/TestTools'
 import { server } from '../mocks/server'
 import { downloadArticleList } from '../../src/download/list'
 import { ProgressBar } from '../../src/utils'
+import { formatTitleWithUuid } from '../helpers/common'
 
 
 let testTools: TestTools
@@ -75,17 +76,17 @@ describe('downloadArticle', () => {
       } as any,
     })
     expect(pr.curr).toBe(tocList.length)
-    let doc1Data = readFileSync(path.join(testTools.cwd, tocList[0].title, `${tocList[1].title}.md`)).toString()
+    let doc1Data = readFileSync(path.join(testTools.cwd, formatTitleWithUuid(tocList[0]), `${formatTitleWithUuid(tocList[1])}.md`)).toString()
     doc1Data = doc1Data.replace(/\.\/img.*?-(\d{6})\./g, (match, random) => {
       return match.replace(random, '123456')
     })
     expect(doc1Data).toMatchSnapshot()
-    const imgPath = path.join(testTools.cwd, tocList[0].title, 'img', tocList[1].uuid)
+    const imgPath = path.join(testTools.cwd,formatTitleWithUuid(tocList[0]), 'img', tocList[1].uuid)
     const imgList = readdirSync(imgPath)
     expect(readFileSync(path.join(imgPath, imgList[0])).length).toBe(99892)
     expect(readFileSync(path.join(imgPath, imgList[1])).length).toBe(81011)
 
-    const doc2Data = readFileSync(path.join(testTools.cwd, tocList[2].title, `${tocList[3].title}.md`)).toString()
+    const doc2Data = readFileSync(path.join(testTools.cwd, formatTitleWithUuid(tocList[2]), `${formatTitleWithUuid(tocList[3])}.md`)).toString()
     expect(doc2Data).toMatchSnapshot()
   })
   it('the title is also a doc', async () => {
@@ -127,17 +128,17 @@ describe('downloadArticle', () => {
     })
     expect(pr.curr).toBe(tocList.length)
 
-    let doc1Data = readFileSync(path.join(testTools.cwd, tocList[0].title, 'index.md')).toString()
+    let doc1Data = readFileSync(path.join(testTools.cwd, formatTitleWithUuid(tocList[0]), 'index.md')).toString()
     doc1Data = doc1Data.replace(/\.\/img.*?-(\d{6})\./g, (match, random) => {
       return match.replace(random, '123456')
     })
     expect(doc1Data).toMatchSnapshot()
-    const imgPath = path.join(testTools.cwd, tocList[0].title, 'img', tocList[0].uuid)
+    const imgPath = path.join(testTools.cwd, formatTitleWithUuid(tocList[0]), 'img', tocList[0].uuid)
     const imgList = readdirSync(imgPath)
     expect(readFileSync(path.join(imgPath, imgList[0])).length).toBe(99892)
     expect(readFileSync(path.join(imgPath, imgList[1])).length).toBe(81011)
 
-    const doc2Data = readFileSync(path.join(testTools.cwd, tocList[0].title, `${tocList[1].title}.md`)).toString()
+    const doc2Data = readFileSync(path.join(testTools.cwd, formatTitleWithUuid(tocList[0]), `${formatTitleWithUuid(tocList[1])}.md`)).toString()
     expect(doc2Data).toMatchSnapshot()
   })
 

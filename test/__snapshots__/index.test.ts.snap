@@ -8,11 +8,11 @@ exports[`main > should work 1`] = `
 
 ## Title1
 
-- [文档1](Title1/文档1.md)
+- [文档1](Title1_001/文档1_002.md)
 
 ## Title2
 
-- [文档2](Title2/文档2.md)
+- [文档2](Title2_003/文档2_004.md)
 "
 `;
 
@@ -29,7 +29,7 @@ text...
 > 原文: <https://www.yuque.com/yuque/base1/two>"
 `;
 
-exports[`main > should work 3`] = `"[{"path":"Title1","pathTitleList":["Title1"],"pathIdList":["001"],"toc":{"type":"TITLE","title":"Title1","uuid":"001","child_uuid":"002","parent_uuid":""}},{"path":"Title1/文档1.md","savePath":"Title1","pathTitleList":["Title1","文档1"],"pathIdList":["001","002"],"toc":{"type":"DOC","title":"文档1","uuid":"002","url":"one","child_uuid":"","parent_uuid":"001"},"createAt":"2025-03-12T12:59:22.000Z","contentUpdatedAt":"2025-03-12T12:59:27.000Z","publishedAt":"2025-03-12T12:59:27.000Z","firstPublishedAt":"2025-03-12T12:59:26.630Z"},{"path":"Title2","pathTitleList":["Title2"],"pathIdList":["003"],"toc":{"type":"TITLE","title":"Title2","uuid":"003","child_uuid":"004","parent_uuid":""}},{"path":"Title2/文档2.md","savePath":"Title2","pathTitleList":["Title2","文档2"],"pathIdList":["003","004"],"toc":{"type":"DOC","title":"文档2","uuid":"004","url":"two","child_uuid":"","parent_uuid":"003"},"createAt":"","contentUpdatedAt":"","publishedAt":"","firstPublishedAt":""}]"`;
+exports[`main > should work 3`] = `"[{"path":"Title1_001","rawPath":"Title1","pathTitleList":["Title1_001"],"rawPathTitleList":["Title1"],"pathIdList":["001"],"toc":{"type":"TITLE","title":"Title1","uuid":"001","child_uuid":"002","parent_uuid":""}},{"path":"Title1_001/文档1_002.md","savePath":"Title1_001","pathTitleList":["Title1_001","文档1_002"],"rawPathTitleList":["Title1","文档1"],"rawMdPath":"Title1_001/文档1.md","pathIdList":["001","002"],"toc":{"type":"DOC","title":"文档1","uuid":"002","url":"one","child_uuid":"","parent_uuid":"001"},"createAt":"2025-03-12T12:59:22.000Z","contentUpdatedAt":"2025-03-12T12:59:27.000Z","publishedAt":"2025-03-12T12:59:27.000Z","firstPublishedAt":"2025-03-12T12:59:26.630Z"},{"path":"Title2_003","rawPath":"Title2","pathTitleList":["Title2_003"],"rawPathTitleList":["Title2"],"pathIdList":["003"],"toc":{"type":"TITLE","title":"Title2","uuid":"003","child_uuid":"004","parent_uuid":""}},{"path":"Title2_003/文档2_004.md","savePath":"Title2_003","pathTitleList":["Title2_003","文档2_004"],"rawPathTitleList":["Title2","文档2"],"rawMdPath":"Title2_003/文档2.md","pathIdList":["003","004"],"toc":{"type":"DOC","title":"文档2","uuid":"004","url":"two","child_uuid":"","parent_uuid":"003"},"createAt":"","contentUpdatedAt":"","publishedAt":"","firstPublishedAt":""}]"`;
 
 exports[`main > should work 4`] = `
 "# 文档1

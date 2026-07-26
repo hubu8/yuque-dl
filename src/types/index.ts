@@ -124,6 +124,7 @@ export interface IProgressItem {
   toc: KnowledgeBase.Toc,
   pathIdList: string[],
   pathTitleList: string[],
+  rawPathTitleList: string[],
   createAt?: string,
   contentUpdatedAt?: string,
   publishedAt?: string,
