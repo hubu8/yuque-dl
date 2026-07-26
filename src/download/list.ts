@@ -101,7 +101,7 @@ export async function downloadArticleList(params: IDownloadArticleListParams) {
     const fileName = fixPath(item.title)
     const pathTitleList = [...preItem.pathTitleList, `${fileName}_${item.uuid}`]
     // 原标题路径,与pathTileList的区别只是不带uuid
-    const rawPathTitleList = [...preItem.rawPathTitleList, fileName]
+    const rawPathTitleList = [...(preItem.rawPathTitleList || []), fileName]
     const pathIdList = [...preItem.pathIdList, item.uuid]
     let mdPath = [...preItem.pathTitleList, `${fileName}_${item.uuid}.md`].map(fixPath).join('/')
     let rawMdPath =  [...preItem.pathTitleList, `${fileName}.md`].map(fixPath).join('/')

@@ -124,7 +124,8 @@ export interface IProgressItem {
   toc: KnowledgeBase.Toc,
   pathIdList: string[],
   pathTitleList: string[],
-  rawPathTitleList: string[],
+  // 单篇文档下载不存rawPathTitleList
+  rawPathTitleList?: string[],
   createAt?: string,
   contentUpdatedAt?: string,
   publishedAt?: string,
