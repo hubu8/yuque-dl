@@ -1,3 +1,13 @@
+## [1.0.86](https://github.com/gxr404/yuque-dl/compare/v1.0.85...v1.0.86) (2026-07-26)
+
+
+### Bug Fixes
+
+* **types:** make rawPathTitleList optional ([a720741](https://github.com/gxr404/yuque-dl/commit/a7207416828e26ec6d4d2b0122e8ab2ddc3d7306))
+* 文件名和文件夹名添加对应uuid,避免相同名导致覆盖 ([316ecce](https://github.com/gxr404/yuque-dl/commit/316ecce49b394d031187cc2f2b1cad3cfa4bbd99))
+
+
+
 ## [1.0.85](https://github.com/gxr404/yuque-dl/compare/v1.0.84...v1.0.85) (2026-06-27)
 
 
