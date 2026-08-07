@@ -1,9 +1,9 @@
 
 import { readFileSync } from 'node:fs'
-import { cac } from 'cac'
+import { cac, Command } from 'cac'
 import semver from 'semver'
 
-import { main } from './index'
+import { downloadDocsFromUrls, downloadBooksFromUrls, downloadUserBooks, main } from './index'
 import { logger } from './utils'
 import { runServer } from './server'
 
@@ -28,9 +28,9 @@ function checkVersion() {
 // 检查node版本
 checkVersion()
 
-cli
-  .command('<url>', '语雀知识库url')
-  .option('-d, --distDir <dir>', '下载的目录{CUSTOM_NEW_LINE(eg: -d download)}', {
+
+function addCommonOption(cliCommand: Command): Command {
+  return cliCommand.option('-d, --distDir <dir>', '下载的目录{CUSTOM_NEW_LINE(eg: -d download)}', {
     default: 'download',
   })
   .option('-i, --ignoreImg', '忽略图片不下载', {
@@ -41,6 +41,7 @@ cli
   })
   .option('-k, --key <key>', '语雀的cookie key， 默认是 "_yuque_session"， 在某些企业版本中 key 不一样')
   .option('-t, --token <token>', '语雀的cookie key 对应的值')
+  .option('-p, --password <password>', '公开密码访问的知识库/文档密码')
   .option('--toc', '是否输出文档toc目录', {
     default: false
   })
@@ -53,7 +54,11 @@ cli
   .option('--hideFooter', '是否禁用页脚显示[更新时间、原文地址...]', {
     default: false
   })
-  .action(async (url: string, options: ICliOptions) => {
+}
+
+const mainCommand = cli.command('<url>', '语雀知识库url')
+addCommonOption(mainCommand)
+  .action(async (url: string, options: ICliOptions & { docs?: string[] }) => {
     try {
       await main(url, options)
       process.exit(0)
@@ -62,6 +67,46 @@ cli
       process.exit(1)
     }
   })
+
+// 子命令 doc 下载指定文档
+const docCommand = cli.command('doc <...urls>', '下载单个或多个文档(必须指定-t参数)')
+addCommonOption(docCommand)
+  .action(async (urls: string[], options: ICliOptions) => {
+    try {
+      await downloadDocsFromUrls(urls, options)
+      process.exit(0)
+    } catch (err) {
+      logger.error(err.message || 'unknown exception')
+      process.exit(1)
+    }
+  })
+
+// 子命令 batch 批量下载多个知识库
+const batchCommand = cli.command('batch <...urls>', '批量下载多个知识库')
+addCommonOption(batchCommand)
+  .action(async (urls: string[], options: ICliOptions) => {
+    try {
+      await downloadBooksFromUrls(urls, options)
+      process.exit(0)
+    } catch (err) {
+      logger.error(err.message || 'unknown exception')
+      process.exit(1)
+    }
+  })
+
+// 子命令 user 下载当前账号的所有知识库
+const userCommand = cli.command('user', '下载当前账号的所有知识库')
+addCommonOption(userCommand)
+  .action(async (options: ICliOptions) => {
+    try {
+      await downloadUserBooks(options)
+      process.exit(0)
+    } catch (err) {
+      logger.error(err.message || 'unknown exception')
+      process.exit(1)
+    }
+  })
+
 
 cli
   .command('server <serverPath>', '启动web服务')

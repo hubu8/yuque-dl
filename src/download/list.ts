@@ -47,9 +47,12 @@ export async function downloadArticleList(params: IDownloadArticleListParams) {
     ) {
       let tempItem: KnowledgeBase.Toc | undefined = item
       const pathTitleList = []
+      // 原标题路径 区别 pathTileList 只是不带uuid
+      const rawPathTitleList = []
       const pathIdList = []
       while (tempItem) {
-        pathTitleList.unshift(fixPath(tempItem.title))
+        pathTitleList.unshift(`${fixPath(tempItem.title)}_${tempItem.uuid}`)
+        rawPathTitleList.unshift(`${fixPath(tempItem.title)}`)
         pathIdList.unshift(tempItem.uuid)
         if (uuidMap.get(tempItem['parent_uuid'])) {
           tempItem = uuidMap.get(tempItem['parent_uuid'])!.toc
@@ -59,7 +62,9 @@ export async function downloadArticleList(params: IDownloadArticleListParams) {
       }
       const progressItem = {
         path: pathTitleList.map(fixPath).join('/'),
+        rawPath: rawPathTitleList.map(fixPath).join('/'),
         pathTitleList,
+        rawPathTitleList,
         pathIdList,
         toc: item
       }
@@ -86,6 +91,7 @@ export async function downloadArticleList(params: IDownloadArticleListParams) {
     let preItem: Omit<IProgressItem, 'toc'> = {
       path: '',
       pathTitleList: [],
+      rawPathTitleList: [],
       pathIdList: []
     }
     const itemType = item.type.toLocaleLowerCase()
@@ -93,19 +99,25 @@ export async function downloadArticleList(params: IDownloadArticleListParams) {
       preItem = uuidMap.get(item['parent_uuid'])!
     }
     const fileName = fixPath(item.title)
-    const pathTitleList = [...preItem.pathTitleList, fileName]
+    const pathTitleList = [...preItem.pathTitleList, `${fileName}_${item.uuid}`]
+    // 原标题路径,与pathTileList的区别只是不带uuid
+    const rawPathTitleList = [...(preItem.rawPathTitleList || []), fileName]
     const pathIdList = [...preItem.pathIdList, item.uuid]
-    let mdPath = [...preItem.pathTitleList, `${fileName}.md`].map(fixPath).join('/')
+    let mdPath = [...preItem.pathTitleList, `${fileName}_${item.uuid}.md`].map(fixPath).join('/')
+    let rawMdPath =  [...preItem.pathTitleList, `${fileName}.md`].map(fixPath).join('/')
     let savePath = preItem.pathTitleList.map(fixPath).join('/')
     // 是标题也是文档
     if (itemType === ARTICLE_CONTENT_TYPE.DOC && item['child_uuid']) {
-      mdPath = [...preItem.pathTitleList, fileName, 'index.md'].map(fixPath).join('/')
+      mdPath = [...preItem.pathTitleList, `${fileName}_${item.uuid}`, 'index.md'].map(fixPath).join('/')
+      rawMdPath= [...preItem.pathTitleList, `${fileName}`, 'index.md'].map(fixPath).join('/')
       savePath = pathTitleList.map(fixPath).join('/')
     }
     const progressItem = {
       path: mdPath,
       savePath,
       pathTitleList,
+      rawPathTitleList,
+      rawMdPath,
       pathIdList,
       toc: item
     }

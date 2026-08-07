@@ -1,3 +1,50 @@
+## [1.0.86](https://github.com/gxr404/yuque-dl/compare/v1.0.85...v1.0.86) (2026-07-26)
+
+
+### Bug Fixes
+
+* **types:** make rawPathTitleList optional ([a720741](https://github.com/gxr404/yuque-dl/commit/a7207416828e26ec6d4d2b0122e8ab2ddc3d7306))
+* 文件名和文件夹名添加对应uuid,避免相同名导致覆盖 ([316ecce](https://github.com/gxr404/yuque-dl/commit/316ecce49b394d031187cc2f2b1cad3cfa4bbd99))
+
+
+
+## [1.0.85](https://github.com/gxr404/yuque-dl/compare/v1.0.84...v1.0.85) (2026-06-27)
+
+
+### Bug Fixes
+
+* remove redundant changes ([ca281a4](https://github.com/gxr404/yuque-dl/commit/ca281a48ba809555e9ac0a6a851cc6cfed3b32e2))
+* update logic for password-protected download process ([831a72b](https://github.com/gxr404/yuque-dl/commit/831a72b38f6eba3aa1b9fe693d53053c46d2da04))
+
+
+### Features
+
+* add user and batch subcommands for multi-book download ([f3eac2d](https://github.com/gxr404/yuque-dl/commit/f3eac2d9b2b7b56d03b3c6c5149562a0a0111933))
+* 调整多知识库下载部分逻辑 ([efc0f10](https://github.com/gxr404/yuque-dl/commit/efc0f10cecfe243c977e5c34e03d70d3dc7a644e))
+
+
+
+## [1.0.84](https://github.com/gxr404/yuque-dl/compare/v1.0.83...v1.0.84) (2026-04-20)
+
+
+### Bug Fixes
+
+* avoid deleting nested a tags ([47c6961](https://github.com/gxr404/yuque-dl/commit/47c6961bee398d074e95ef9594f5bf23e12c935a))
+
+
+
+## [1.0.83](https://github.com/gxr404/yuque-dl/compare/v1.0.82...v1.0.83) (2026-03-17)
+
+
+### Features
+
+* **api:** add getDocInfoFromUrl to fetch document info from URL ([ab6ae44](https://github.com/gxr404/yuque-dl/commit/ab6ae44233069b340d51dd9fd2d28555f38a3892))
+* change --docs option to doc command ([e3fa89a](https://github.com/gxr404/yuque-dl/commit/e3fa89a975cab4aadc659fc97280941d83779a33))
+* **cli:** add --docs option to download specific documents ([127d48e](https://github.com/gxr404/yuque-dl/commit/127d48edbe3d5e3fa7218b6ba91d552bd99b0242))
+* **types:** add Doc interface and IDocInfo type for single document support ([0387317](https://github.com/gxr404/yuque-dl/commit/0387317efcc5416766395bc37ee086fd0c924df7))
+
+
+
 ## [1.0.82](https://github.com/gxr404/yuque-dl/compare/v1.0.81...v1.0.82) (2025-11-30)
 
 

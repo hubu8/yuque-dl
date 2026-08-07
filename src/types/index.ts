@@ -18,6 +18,8 @@ export interface ICliOptions {
   token?: string
   /** 自定义token key(企业所有部署) */
   key?: string
+  /** 公开密码访问的知识库/文档密码 */
+  password?: string
   /** 是否忽略markdown中toc的生成 */
   toc: boolean
   /** 是否增量下载 */
@@ -122,6 +124,8 @@ export interface IProgressItem {
   toc: KnowledgeBase.Toc,
   pathIdList: string[],
   pathTitleList: string[],
+  // 单篇文档下载不存rawPathTitleList
+  rawPathTitleList?: string[],
   createAt?: string,
   contentUpdatedAt?: string,
   publishedAt?: string,
@@ -189,6 +193,16 @@ export interface IKnowledgeBaseInfo {
   host?: string,
   imageServiceDomains?: string[]
 }
+export interface IDocInfo {
+  docId?: number
+  docSlug?: string
+  docTitle?: string
+  bookId?: number
+  bookSlug?: string
+  bookName?: string
+  host?: string
+  imageServiceDomains?: string[]
+}
 export interface IReqHeader {
   [key: string]: string
 }
@@ -197,8 +211,11 @@ export interface GetHeaderParams {
   key?:string,
   /** token value */
   token?: string
+  /** public password */
+  password?: string
 }
 export type TGetKnowledgeBaseInfo = (url: string, headerParams: GetHeaderParams) => Promise<IKnowledgeBaseInfo>
+export type TGetDocInfoFromUrl = (url: string, headerParams: GetHeaderParams) => Promise<IDocInfo>
 
 export interface GetMdDataParams {
   articleUrl: string,

@@ -46,7 +46,7 @@ describe('yuque-dl CLI', () => {
     expect(stdout).toContain('√ 已完成')
     const imgDir = path.join(testTools.cwd, '如何从其他工具迁入语雀/img')
     expect(fs.existsSync(imgDir)).toBeFalsy()
-    const indexMdPath = path.join(testTools.cwd, '如何从其他工具迁入语雀/导入导出功能.md')
+    const indexMdPath = path.join(testTools.cwd, '如何从其他工具迁入语雀/导入导出功能_LwnoM9gGTxmL9hlR.md')
     const data = fs.readFileSync(indexMdPath).toString()
     expect(data).toMatchSnapshot()
   })
@@ -62,8 +62,93 @@ describe('yuque-dl CLI', () => {
     expect(stdout).toContain('√ 已完成')
     const imgDir = path.join(testTools.cwd, '如何从其他工具迁入语雀/img')
     expect(fs.existsSync(imgDir)).toBeFalsy()
-    const indexMdPath = path.join(testTools.cwd, '如何从其他工具迁入语雀/导入导出功能.md')
+    const indexMdPath = path.join(testTools.cwd, '如何从其他工具迁入语雀/导入导出功能_LwnoM9gGTxmL9hlR.md')
     const data = fs.readFileSync(indexMdPath).toString()
     expect(data).toMatchSnapshot()
+  })
+})
+
+describe('yuque-dl doc', () => {
+  beforeEach(() => {
+    testTools = new TestTools()
+  })
+
+  afterEach(() => {
+    testTools.cleanup()
+  })
+
+  it('should work', async () => {
+    const { exitCode, stdout } = await testTools.fork(cliPath, [
+      'doc',
+      'https://www.yuque.com/yuque/thyzgp/repository',
+      'https://www.yuque.com/yuque/thyzgp/chubmd',
+      '-d', '.',
+    ])
+    expect(exitCode).toBe(0)
+    expect(stdout).toMatch(/√ 已完成.*[\\/]知识库是什么\.md/g)
+    expect(stdout).toMatch(/√ 已完成.*[\\/]如何删除知识库\.md/g)
+  })
+
+
+  it('contain 404 url', async () => {
+    const { exitCode, stdout } = await testTools.fork(cliPath, [
+      'doc',
+      'https://www.yuque.com/yuque/thyzgp/repository',
+      'https://www.yuque.com/yuque/thyzgp/404',
+      '-d', '.',
+    ])
+    console.log('stdout', stdout)
+    expect(exitCode).toBe(0)
+    expect(stdout).toMatch(/√ 已完成.*[\\/]知识库是什么\.md/g)
+    expect(stdout).toMatch('✕ 下载失败: https://www.yuque.com/yuque/thyzgp/404')
+  })
+
+  it('download docs with invalid url should fail', async () => {
+    const { exitCode, stdout } = await testTools.fork(cliPath, [
+      'doc',
+      'invalid-url',
+      '-d', '.',
+    ])
+    expect(exitCode).toBe(1)
+    expect(stdout).toContain('Invalid URL')
+  })
+})
+
+
+describe('yuque-dl batch', () => {
+  beforeEach(() => {
+    testTools = new TestTools()
+  })
+
+  afterEach(() => {
+    testTools.cleanup()
+  })
+
+  it('should work', async () => {
+    const { exitCode, stdout } = await testTools.fork(cliPath, [
+      'batch',
+      'https://www.yuque.com/yuque/eaghk3',
+      'https://www.yuque.com/yuque/rdglqp',
+      '-d', '.',
+    ])
+    expect(exitCode).toBe(0)
+
+    expect(stdout).toMatch(/下载完成: 2\/2 个知识库成功/g)
+    expect(stdout).toMatch(/√ 已完成.*[\\/]行业解决方案/g)
+    expect(stdout).toMatch(/√ 已完成.*[\\/]如何从其他工具迁入语雀/g)
+  })
+
+  it('contain 404 book', async () => {
+    const { exitCode, stdout } = await testTools.fork(cliPath, [
+      'batch',
+      'https://www.yuque.com/yuque/eaghk3',
+      'https://www.yuque.com/yuque/404',
+      '-d', '.',
+    ])
+
+    expect(exitCode).toBe(0)
+    expect(stdout).toMatch(/下载完成: 1\/2 个知识库成功/g)
+    expect(stdout).toMatch(/失败 1 个/g)
+    expect(stdout).toMatch('———— ✕ https://www.yuque.com/yuque/404: Request failed with status code 404')
   })
 })

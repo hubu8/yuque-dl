@@ -24,10 +24,14 @@ $ yuque-dl --help
 
   Commands:
     <url>                语雀知识库url
+    batch <...urls>      批量下载多个知识库
+    user                 下载当前账号的所有知识库
+    doc <...urls>        下载单个或多个文档
     server <serverPath>  启动web服务
 
   For more info, run any command with the `--help` flag:
     $ yuque-dl --help
+    $ yuque-dl doc --help
     $ yuque-dl server --help
 
   Options:
@@ -38,7 +42,8 @@ $ yuque-dl --help
                                           └─ eg: --ignoreAttachments mp4,pdf // 忽略后缀名mp4,pdf的附件
                                           └─ eg: --ignoreAttachments // 忽略所有附件 (默认值: false)
     -k, --key <key>                      语雀的cookie key， 默认是 "_yuque_session"， 在某些企业版本中 key 不一样
-    -t, --token <token>                  语雀的cookie key 对应的值 
+    -t, --token <token>                  语雀的cookie key 对应的值
+    -p, --password <password>            公开密码访问的知识库/文档密码
     --toc                                是否输出文档toc目录 (默认值: false)
     --incremental                        开启增量下载[初次下载加不加该参数没区别] (默认值: false)
     --convertMarkdownVideoLinks          转化markdown视频链接为video标签 (默认值: false)
@@ -49,9 +54,46 @@ $ yuque-dl --help
 
 ### Start
 
+下载整个知识库
+
 ```bash
 # url 为对应需要的知识库地址
 yuque-dl "https://www.yuque.com/yuque/thyzgp"
+```
+
+下载知识库中指定文档
+
+```bash
+# 下载单个文档
+yuque-dl doc "https://www.yuque.com/yuque/thyzgp/repository"
+
+# 下载多个文档
+yuque-dl doc "https://www.yuque.com/yuque/thyzgp/repository" "https://www.yuque.com/yuque/thyzgp/gbdfpb"
+```
+
+### 多知识库下载
+
+下载当前账号的所有知识库
+
+```bash
+# 需要提供登录token，自动枚举并下载所有知识库
+yuque-dl user -t "your_yuque_session_token"
+
+# 指定输出目录
+yuque-dl user -t "token" -d ./my-yuque-backup
+```
+
+> 必须带 -t 指定token
+
+
+批量下载多个知识库
+
+```bash
+# 指定多个知识库URL批量下载
+yuque-dl batch "https://www.yuque.com/yuque/eaghk3" "https://www.yuque.com/yuque/rdglqp"
+
+# 搭配其他选项
+yuque-dl batch "url1" "url2" -t "token" -d ./backup --hideFooter
 ```
 
 ## Example
@@ -85,7 +127,17 @@ yuque-dl "https://www.yuque.com/yuque/thyzgp" -t "abcd..."
 
 ![public_pwd](https://github.com/gxr404/yuque-dl/assets/17134256/b546a9a3-68f0-4f76-b450-6b16f464db5d)
 
-⚠️ 公开密码访问的知识库两种情况:
+现有两种方式下载公开密码访问的知识库
+
+#### 通过密码
+
+```bash
+yuque-dl "url" -p "知识库密码"
+```
+
+#### 通过cookie
+
+⚠️ 通过`cookie`公开密码访问的知识库两种情况:
 
 - 已经登录语雀，访问需要密码的知识库 输入密码后使用`_yuque_session`这个cookie
 
@@ -121,6 +173,9 @@ yuque-dl server ./download/知识库/
 - [x] 添加toc目录功能
 - [x] 添加测试
 - [x] 添加附件下载
+- [x] 支持下载单个或多个指定文档
+- [x] 支持一键下载当前账号的所有知识库
+- [x] 支持批量下载多个指定知识库
 - [ ] 支持其他文档类型？🤔
 - [ ] 直接打包成可执行文件 🤔
 
